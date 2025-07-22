@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/CMakeFiles/Adpd144ri"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/CMakeFiles/Adpd144ri.rule"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/CMakeFiles/Adpd144ri-complete.rule"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-build.rule"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-configure.rule"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-download.rule"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-install.rule"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-mkdir.rule"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-patch.rule"
+		},
+		{
+			"file" : "C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"Adpd144ri"
+		],
+		"name" : "Adpd144ri"
+	}
+}

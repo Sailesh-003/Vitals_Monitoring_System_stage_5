@@ -1,0 +1,5 @@
+west:
+  command: C:\Users\saile\AppData\Local\Programs\Python\Python38\Scripts\west build
+    -b nrf52dk/nrf52832 --pristine
+  topdir: C:\ncs\v2.9.1
+  version: 1.2.0

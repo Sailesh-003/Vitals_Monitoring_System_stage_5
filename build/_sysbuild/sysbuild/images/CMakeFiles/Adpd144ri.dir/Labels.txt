@@ -1,0 +1,13 @@
+# Target labels
+ Adpd144ri
+# Source files and their labels
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/CMakeFiles/Adpd144ri
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/CMakeFiles/Adpd144ri.rule
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/CMakeFiles/Adpd144ri-complete.rule
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-build.rule
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-configure.rule
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-download.rule
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-install.rule
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-mkdir.rule
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-patch.rule
+C:/ncs/v2.9.1/nrf/samples/Adpd144ri/build/_sysbuild/sysbuild/images/Adpd144ri-prefix/src/Adpd144ri-stamp/Adpd144ri-update.rule
