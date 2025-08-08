@@ -4,7 +4,7 @@
 #include <zephyr/types.h>
 
 typedef struct {
-    //uint64_t timestamp_ms;
+    uint64_t timestamp_ms;
     int16_t adc_raw_value;
     float temperature_c;
 } TempSample;
