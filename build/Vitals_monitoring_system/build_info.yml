@@ -12,6 +12,7 @@ cmake:
      - C:/ncs/v2.9.1/zephyr/dts/bindings
     files:
      - C:/ncs/v2.9.1/zephyr/boards/nordic/nrf52dk/nrf52dk_nrf52832.dts
+     - C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/nrf52dk_nrf52832.overlay
     include-dirs:
      - C:/ncs/v2.9.1/nrf/include
      - C:/ncs/v2.9.1/nrf/dts
@@ -28,6 +29,8 @@ cmake:
      - C:/ncs/v2.9.1/zephyr/dts/arm
      - C:/ncs/v2.9.1/zephyr/dts/arc
      - C:/ncs/v2.9.1/zephyr/dts
+    user-files:
+     - C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/nrf52dk_nrf52832.overlay
   kconfig:
     files:
      - C:/ncs/v2.9.1/zephyr/boards/nordic/nrf52dk/nrf52dk_nrf52832_defconfig

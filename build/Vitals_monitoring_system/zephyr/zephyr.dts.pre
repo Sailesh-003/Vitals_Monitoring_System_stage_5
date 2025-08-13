@@ -1019,4 +1019,58 @@ arduino_spi: &spi2 {
  status = "disabled";
 };
 # 0 "<command-line>" 2
+# 1 "C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/nrf52dk_nrf52832.overlay" 1
+
+&i2c0 {
+    status = "okay";
+    clock-frequency = <100000>;
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-1 = <&i2c0_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    lis3dh@18 {
+        compatible = "st,lis3dh";
+        reg = <0x18>;
+        label = "LIS3DH";
+        status = "okay";
+    };
+
+    adpd144ri@64 {
+        compatible = "adi,adpd144ri";
+        reg = <0x64>;
+        label = "ADPD144RI";
+        status = "okay";
+    };
+};
+
+
+
+
+&rtc2 {
+    status = "okay";
+};
+
+
+&adc {
+    status = "okay";
+
+
+    channel@1 {
+        reg = <1 0 1>;
+        zephyr,gain = "ADC_GAIN_1_4";
+        zephyr,reference = "ADC_REF_VDD_1_4";
+        zephyr,acquisition-time = <0>;
+        zephyr,input-positive = <2>;
+    };
+
+
+    channel@6 {
+        reg = <6 0 1>;
+        zephyr,gain = "ADC_GAIN_1_6";
+        zephyr,reference = "ADC_REF_INTERNAL";
+        zephyr,acquisition-time = <0>;
+        zephyr,input-positive = <6>;
+    };
+};
+# 0 "<command-line>" 2
 # 1 "C:/ncs/v2.9.1/zephyr/misc/empty_file.c"

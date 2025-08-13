@@ -145,6 +145,19 @@
 			pinctrl-0 = < &i2c0_default >;
 			pinctrl-1 = < &i2c0_sleep >;
 			pinctrl-names = "default", "sleep";
+			clock-frequency = < 0x186a0 >;
+			lis3dh@18 {
+				compatible = "st,lis3dh";
+				reg = < 0x18 >;
+				label = "LIS3DH";
+				status = "okay";
+			};
+			adpd144ri@64 {
+				compatible = "adi,adpd144ri";
+				reg = < 0x64 >;
+				label = "ADPD144RI";
+				status = "okay";
+			};
 		};
 		spi0: spi@40003000 {
 			compatible = "nordic,nrf-spi";
@@ -206,6 +219,20 @@
 			status = "okay";
 			#io-channel-cells = < 0x1 >;
 			phandle = < 0x15 >;
+			channel@1 {
+				reg = < 0x1 0x0 0x1 >;
+				zephyr,gain = "ADC_GAIN_1_4";
+				zephyr,reference = "ADC_REF_VDD_1_4";
+				zephyr,acquisition-time = < 0x0 >;
+				zephyr,input-positive = < 0x2 >;
+			};
+			channel@6 {
+				reg = < 0x6 0x0 0x1 >;
+				zephyr,gain = "ADC_GAIN_1_6";
+				zephyr,reference = "ADC_REF_INTERNAL";
+				zephyr,acquisition-time = < 0x0 >;
+				zephyr,input-positive = < 0x6 >;
+			};
 		};
 		timer0: timer@40008000 {
 			compatible = "nordic,nrf-timer";
@@ -443,7 +470,7 @@
 			reg = < 0x40024000 0x1000 >;
 			cc-num = < 0x4 >;
 			interrupts = < 0x24 0x1 >;
-			status = "disabled";
+			status = "okay";
 			clock-frequency = < 0x8000 >;
 			prescaler = < 0x1 >;
 		};

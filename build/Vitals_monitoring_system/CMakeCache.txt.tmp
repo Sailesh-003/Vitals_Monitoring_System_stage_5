@@ -321,7 +321,7 @@ DTC:FILEPATH=C:/ncs/toolchains/b620d30767/opt/bin/dtc.exe
 // parameter. These settings will override the settings in the
 // board's .dts file. Multiple files may be listed, e.g. DTC_OVERLAY_FILE="dts1.overlay
 // dts2.overlay"
-DTC_OVERLAY_FILE:STRING=
+DTC_OVERLAY_FILE:STRING=C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/nrf52dk_nrf52832.overlay
 
 //No help, variable specified on the command line.
 EXTRA_KCONFIG_TARGETS:UNINITIALIZED=
