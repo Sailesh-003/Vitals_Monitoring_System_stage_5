@@ -92,32 +92,6 @@ static void ccc_cfg_changed_accel(const struct bt_gatt_attr *attr, uint16_t valu
 {
     notify_enabled_accel = (value == BT_GATT_CCC_NOTIFY);
 }
-/*
-BT_GATT_SERVICE_DEFINE(sensor_svc,
-    BT_GATT_PRIMARY_SERVICE(&service_uuid),
-
-    BT_GATT_CHARACTERISTIC(&ppg_char_uuid.uuid,
-                          BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
-                          BT_GATT_PERM_READ,
-                          read_ppg, NULL, NULL),
-    BT_GATT_CCC(ccc_cfg_changed_ppg,
-                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
-
-    BT_GATT_CHARACTERISTIC(&temp_char_uuid.uuid,
-                          BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
-                          BT_GATT_PERM_READ,
-                          read_temp, NULL, NULL),
-    BT_GATT_CCC(ccc_cfg_changed_temp,
-                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
-
-    BT_GATT_CHARACTERISTIC(&accel_char_uuid.uuid,
-                          BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
-                          BT_GATT_PERM_READ,
-                          read_accel, NULL, NULL),
-    BT_GATT_CCC(ccc_cfg_changed_accel,
-                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE)
-);
-*/
 
 /* GATT service definitions */
 BT_GATT_SERVICE_DEFINE(ppg_svc,
@@ -174,7 +148,7 @@ void connected(struct bt_conn *conn, uint8_t err)
         return;
     }
     current_conn = bt_conn_ref(conn);
-    printk("[BLE] Device Connected\n");
+    printk("[BLE] Besquare-Yantram Device Connected\n");
 }
 
 void disconnected(struct bt_conn *conn, uint8_t reason)

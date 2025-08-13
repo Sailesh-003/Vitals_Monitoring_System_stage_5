@@ -1,69 +1,82 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
+#include <zephyr/irq.h>       
 #include <time.h>
 #include <stdio.h>
 #include "rtc.h"
 
-#define UNIX_TIME_START 1718000000UL   // Unix timestamp (set it manually)
-#define LFCLK_FREQ 32768UL             // Low-frequency clock 32768 Hz
-#define RTC2_PRESCALER 0
-#define RTC_TICKS_PER_SEC (LFCLK_FREQ / (RTC2_PRESCALER + 1))  // Number of RTC ticks per second
+#define UNIX_TIME_START 1718000000UL
+#define LFCLK_FREQ      32768UL
+#define RTC2_PRESCALER  0
+#define RTC_TICKS_PER_SEC (LFCLK_FREQ / (RTC2_PRESCALER + 1))
 
-/*This function initializes the Real-Time Counter 2 (RTC2) on the Nordic SoC to function as a system timer for timestamping sensor data. It performs the following steps:
+static volatile bool rtc2_alarm_fired = false;
 
--> Starts the low-frequency clock (LFCLK) using an external crystal.
+/* Direct IRQ handler registration */
+void RTC2_IRQHandler(void)
+{
+    if (NRF_RTC2->EVENTS_COMPARE[0]) {
+        NRF_RTC2->EVENTS_COMPARE[0] = 0;
+        rtc2_alarm_fired = true;
+        __SEV(); // Wake CPU from WFE
+    }
+}
 
--> Stops, resets, and sets the prescaler for RTC2.
-
--> Starts RTC2 to run continuously.
-
--> It is used later to provide precise time stamps in milliseconds for sampled sensor data.*/
-
+/* Initialize RTC2 peripheral */
 void rtc2_init(void) {
-    // Print a message to indicate RTC2 initialization has started
     printk("[RTC2] Initializing RTC2...\n");
 
-    // Set the LFCLK (low-frequency clock) source to external crystal oscillator
+    // Start LFCLK from XTAL
     NRF_CLOCK->LFCLKSRC = CLOCK_LFCLKSRC_SRC_Xtal;
-
-    // Clear the 'LFCLK started' event flag
     NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
-
-    // Trigger the task to start the LFCLK
     NRF_CLOCK->TASKS_LFCLKSTART = 1;
-
-    // Wait until the LFCLK has started (polling the event flag)
     while (!NRF_CLOCK->EVENTS_LFCLKSTARTED) {}
 
-    NRF_RTC2->TASKS_STOP = 1;               // Stop RTC2 before reconfiguration
-    NRF_RTC2->PRESCALER = RTC2_PRESCALER;   // Set the RTC2 prescaler to control tick frequency (0 = no division)
-    NRF_RTC2->TASKS_CLEAR = 1;              // Clear the RTC2 counter (reset to 0)
-    NRF_RTC2->TASKS_START = 1;              // Start the RTC2 counter
-    
-    // Print a message indicating RTC2 is now running with configured settings
-    printk("[RTC2] RTC2 running (prescaler=%d, unix start=%lu).\n", RTC2_PRESCALER, (unsigned long)UNIX_TIME_START);
+    // Stop and configure RTC2
+    NRF_RTC2->TASKS_STOP = 1;
+    NRF_RTC2->PRESCALER = RTC2_PRESCALER;
+    NRF_RTC2->TASKS_CLEAR = 1;
+
+    // Enable COMPARE0 event & interrupt
+    NRF_RTC2->EVTENSET = RTC_EVTENSET_COMPARE0_Msk;
+    NRF_RTC2->INTENSET = RTC_INTENSET_COMPARE0_Msk;
+
+    /* Register the interrupt with Zephyr */
+    IRQ_DIRECT_CONNECT(RTC2_IRQn, 3, RTC2_IRQHandler, 0);
+
+    /* Enable the interrupt in NVIC */
+    irq_enable(RTC2_IRQn);
+
+    // Start RTC2
+    NRF_RTC2->TASKS_START = 1;
+
+    printk("[RTC2] RTC2 running.\n");
 }
 
-
-/*This function returns the current timestamp in milliseconds based on the number of ticks from the RTC2 hardware counter.
-
-It calculates the elapsed time since a defined starting point (UNIX_TIME_START) and adds the milliseconds computed from the counter ticks.*/
 uint64_t get_timestamp_ms(void) {
-    uint32_t ticks = NRF_RTC2->COUNTER;               // Read the current tick count from the RTC2 hardware counter (increments every ~30.5 µs)
-    uint64_t ms = ((uint64_t)ticks * 1000UL) / RTC_TICKS_PER_SEC;       // Convert tick count to milliseconds using the tick rate (32768 ticks/sec)
-    return ((uint64_t)UNIX_TIME_START * 1000UL) + ms;           // Return the full timestamp = initial UNIX time (in ms) + elapsed milliseconds
+    uint32_t ticks = NRF_RTC2->COUNTER;
+    uint64_t ms = ((uint64_t)ticks * 1000UL) / RTC_TICKS_PER_SEC;
+    return ((uint64_t)UNIX_TIME_START * 1000UL) + ms;
 }
 
-
-/*This function converts a timestamp into a human-readable format (dd/mm/yyyy  hr:min:sec:ms)*/
 void format_timestamp(uint64_t timestamp_ms, char *buffer, size_t size) {
-    time_t sec = timestamp_ms / 1000;       // Convert milliseconds to seconds (standard Unix timestamp format)
-    uint16_t ms = timestamp_ms % 1000;      // Extract the milliseconds part (remainder after dividing by 1000)
-    struct tm t;                            // Structure to hold broken-down time (year, month, day, hour, etc.)
-    gmtime_r(&sec, &t);                     // Convert 'sec' into UTC time represented in 'struct tm' (thread-safe version)
-
-    // Format the date & time into the buffer as: dd/mm/yyyy hh:mm:ss.mmm
+    time_t sec = timestamp_ms / 1000;
+    uint16_t ms = timestamp_ms % 1000;
+    struct tm t;
+    gmtime_r(&sec, &t);
     snprintf(buffer, size, "%02d/%02d/%04d %02d:%02d:%02d.%03d",
         t.tm_mday, t.tm_mon + 1, t.tm_year + 1900,
         t.tm_hour, t.tm_min, t.tm_sec, ms);
+}
+
+void rtc2_set_alarm(uint32_t ms_from_now) {
+    uint32_t current_ticks = NRF_RTC2->COUNTER;
+    uint32_t ticks_offset = (ms_from_now * RTC_TICKS_PER_SEC) / 1000UL;
+    uint32_t compare_value = (current_ticks + ticks_offset) & 0x00FFFFFF;
+    NRF_RTC2->CC[0] = compare_value;
+    rtc2_alarm_fired = false;
+}
+
+bool rtc2_alarm_triggered(void) {
+    return rtc2_alarm_fired;
 }

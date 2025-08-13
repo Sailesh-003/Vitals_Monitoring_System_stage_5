@@ -14,8 +14,16 @@
 
 #define I2C_NODE DT_NODELABEL(i2c0)
 
-#define BATCH_SIZE 1
+#define BATCH_SIZE 6
 #define MSGQ_SIZE 20
+
+#define MAX_SAMPLES 1998
+
+#define I2C_MUTEX_TIMEOUT  K_MSEC(5)  // Max wait time for I2C access
+
+static uint16_t a_cnt=0, p_cnt=0;
+
+K_MUTEX_DEFINE(i2c_bus_mutex);
 
 K_MSGQ_DEFINE(ppg_msgq, sizeof(PPGSample), MSGQ_SIZE, 4);
 K_MSGQ_DEFINE(temp_msgq, sizeof(TempSample), MSGQ_SIZE, 4);
@@ -90,353 +98,243 @@ void sensor_thread(void)
 
     if (!device_is_ready(i2c_dev)) {
         printk("[I2C] device %s not ready!\n", i2c_dev->name);
-        while (1) {
-            k_msleep(1000);
+        return;
+    }
+
+    // Init LIS3DH
+    if (k_mutex_lock(&i2c_bus_mutex, I2C_MUTEX_TIMEOUT) == 0) {
+        if (!lis3dh_init(&lis3dh_dev, i2c_dev, 0x18)) {
+            printk("[LIS3DH] Accelerometer sensor initialization failed\n");
         }
+        k_mutex_unlock(&i2c_bus_mutex);
     }
 
-    if (!lis3dh_init(&lis3dh_dev, i2c_dev, 0x18)) {
-        printk("[LIS3DH] Accelerometer sensor initialization failed\n");
+    // Init PPG
+    if (k_mutex_lock(&i2c_bus_mutex, I2C_MUTEX_TIMEOUT) == 0) {
+        if (adpd144ri_configure_spo2_hr(i2c_dev) != 0) {
+            printk("[PPG] PPG Sensor failed\n");
+        }
+        k_mutex_unlock(&i2c_bus_mutex);
     }
 
+    // Re-init LIS3DH after PPG setup
+    if (k_mutex_lock(&i2c_bus_mutex, I2C_MUTEX_TIMEOUT) == 0) {
+        if (!lis3dh_init(&lis3dh_dev, i2c_dev, 0x18)) {
+            printk("[LIS3DH] Accelerometer sensor re-init failed\n");
+        }
+        k_mutex_unlock(&i2c_bus_mutex);
+    }
+
+    // Temp sensor init
     if (temp_sensor_init() != 0) {
         printk("[TEMP] Temperature sensor initialization failed\n");
     }
 
     rtc2_init();
 
+    PPGSample ppg_sample;
+    lis3dh_data_t accel_sample;
+    TempSample temp_sample;
+
     while (1) {
         while (!(notify_enabled_ppg || notify_enabled_temp || notify_enabled_accel)) {
             k_msleep(200);
         }
 
-        while (adpd144ri_configure_spo2_hr(i2c_dev) != 0) {
-            printk("[SENSOR] PPG sensor config failed, retrying...\n");
-            k_msleep(200);
-            if (!(notify_enabled_ppg || notify_enabled_temp || notify_enabled_accel)) {
+        while (notify_enabled_ppg || notify_enabled_accel || notify_enabled_temp) {
+
+            // --- Read PPG ---
+            if (p_cnt < MAX_SAMPLES && notify_enabled_ppg) {
+                if (k_mutex_lock(&i2c_bus_mutex, I2C_MUTEX_TIMEOUT) == 0) {
+                    if (adpd144ri_read_2ch(i2c_dev, ppg_sample.channels) == 0) {
+                        ppg_sample.timestamp_ms = get_timestamp_ms();
+                        k_msgq_put(&ppg_msgq, &ppg_sample, K_NO_WAIT);
+                        p_cnt++;
+                    }
+                    k_mutex_unlock(&i2c_bus_mutex);
+                }
+            }
+
+            // --- Read ACCEL ---
+            if (a_cnt < MAX_SAMPLES && notify_enabled_accel) {
+                if (k_mutex_lock(&i2c_bus_mutex, I2C_MUTEX_TIMEOUT) == 0) {
+                    if (lis3dh_read_data(&lis3dh_dev, accel_sample.data)) {
+                        accel_sample.timestamp_ms = get_timestamp_ms();
+                        k_msgq_put(&accel_msgq, &accel_sample, K_NO_WAIT);
+                        a_cnt++;
+                    }
+                    k_mutex_unlock(&i2c_bus_mutex);
+                }
+            }
+
+            // --- Read TEMP ---
+            if (p_cnt >= MAX_SAMPLES && a_cnt >= MAX_SAMPLES && notify_enabled_temp) {
+                k_msleep(100);
+                if (temp_sensor_read(&temp_sample) == 0) {
+                    temp_sample.timestamp_ms = get_timestamp_ms();
+                    k_msgq_put(&temp_msgq, &temp_sample, K_NO_WAIT);
+                }
+                printk("[SENSOR] Collected FULL batch: PPG=%d, ACCEL=%d, TEMP=1\n", p_cnt, a_cnt);
+                // Note: We do NOT reset counters or sleep here
                 break;
-            }
-        }
-        if (!(notify_enabled_ppg || notify_enabled_temp || notify_enabled_accel)) {
-            continue;
-        }
-
-        printk("[SENSOR] Measurement loop started\n");
-
-        while (notify_enabled_ppg || notify_enabled_temp || notify_enabled_accel) {
-            PPGSample ppg_sample = {0};
-            TempSample temp_sample = {0};
-            lis3dh_data_t accel_sample = {0};
-
-            //ppg_sample.timestamp_ms = get_timestamp_ms();
-            int rc = adpd144ri_read_2ch(i2c_dev, ppg_sample.channels);
-            if (rc) {
-                printk("[SENSOR] PPG sensor read failed (rc=%d)\n", rc);
-            } else {
-                ppg_sample.timestamp_ms = get_timestamp_ms();
-            }
-
-            if (temp_sensor_read(&temp_sample) != 0) {
-                printk("[SENSOR] Temperature sensor read failed\n");
-            } else {
-                temp_sample.timestamp_ms = get_timestamp_ms();
-            }
-
-            if (!lis3dh_read_data(&lis3dh_dev, accel_sample.data)) {
-                printk("[SENSOR] LIS3DH accelerometer read failed\n");
-            } else {
-                accel_sample.timestamp_ms = get_timestamp_ms();
-            }
-
-            if (notify_enabled_ppg && k_msgq_put(&ppg_msgq, &ppg_sample, K_NO_WAIT)) {
-                printk("[SENSOR] PPG msgq full, dropping sample\n");
-            }
-
-            if (notify_enabled_temp && k_msgq_put(&temp_msgq, &temp_sample, K_NO_WAIT)) {
-                printk("[SENSOR] Temp msgq full, dropping sample\n");
-            }
-
-            if (notify_enabled_accel && k_msgq_put(&accel_msgq, &accel_sample, K_NO_WAIT)) {
-                printk("[SENSOR] Accel msgq full, dropping sample\n");
             }
 
             k_msleep(30);
         }
-        printk("[SENSOR] Measurement loop paused (notifications off)\n");
     }
 }
-/*
-void printer_thread(void)
-{
-    printk("[THREAD] printer_thread started\n");
 
-    PPGSample ppg_batch[BATCH_SIZE];
-    TempSample temp_batch[BATCH_SIZE];
-    lis3dh_data_t accel_batch[BATCH_SIZE];
-    char ts[64];
-
-    while (1) {
-        if (notify_enabled_ppg) {
-            for (int i = 0; i < BATCH_SIZE; i++) {
-                if (k_msgq_get(&ppg_msgq, &ppg_batch[i], K_NO_WAIT)) {
-                    printk("[PRINTER] Failed to get PPG sample\n");
-                }
-            }
-        }
-
-        if (notify_enabled_temp) {
-            for (int i = 0; i < BATCH_SIZE; i++) {
-                if (k_msgq_get(&temp_msgq, &temp_batch[i], K_NO_WAIT)) {
-                    printk("[PRINTER] Failed to get Temp sample\n");
-                }
-            }
-        }
-
-        if (notify_enabled_accel) {
-            for (int i = 0; i < BATCH_SIZE; i++) {
-                if (k_msgq_get(&accel_msgq, &accel_batch[i], K_NO_WAIT)) {
-                    printk("[PRINTER] Failed to get Accel sample\n");
-                }
-            }
-        }
-
-        k_mutex_lock(&notify_buf_mutex, K_FOREVER);
-
-        
-        if (notify_enabled_ppg) {
-            int pos = 0, len = SENSOR_NOTIFY_BUF_SIZE;
-            pos += snprintf(sensor_notify_buf_ppg + pos, len - pos, "PPG_BATCH:");
-            for (int i = 0; i < BATCH_SIZE && pos < len; i++) {
-                format_timestamp(ppg_batch[i].timestamp_ms, ts, sizeof(ts));
-                uint64_t ts_ms = parse_timestamp_ms(ts);
-                int w = snprintk(sensor_notify_buf_ppg + pos, len - pos,
-                                "#%llu,%x,%x", (unsigned long long)ts_ms,
-                                (unsigned long)ppg_batch[i].channels[0],
-                                (unsigned long)ppg_batch[i].channels[1]);
-                if (w < 0 || w >= len - pos) {
-                    break;
-                }
-                pos += w;
-            }
-            sensor_notify_buf_ppg[len - 1] = '\0';
-        }
-
-        if (notify_enabled_temp) {
-            int pos = 0, len = SENSOR_NOTIFY_BUF_SIZE;
-            pos += snprintf(sensor_notify_buf_temp + pos, len - pos, "TEMP_BATCH:");
-            for (int i = 0; i < BATCH_SIZE && pos < len; i++) {
-                format_timestamp(temp_batch[i].timestamp_ms, ts, sizeof(ts));
-                uint64_t ts_ms = parse_timestamp_ms(ts);
-                int w = snprintk(sensor_notify_buf_temp + pos, len - pos,
-                                "#%llu,%.2f", (unsigned long long)ts_ms, (double)temp_batch[i].temperature_c);
-                if (w < 0 || w >= len - pos) {
-                    break;
-                }
-                pos += w;
-            }
-            sensor_notify_buf_temp[len - 1] = '\0';
-        }
-
-        if (notify_enabled_accel) {
-            int pos = 0, len = SENSOR_NOTIFY_BUF_SIZE;
-            pos += snprintk(sensor_notify_buf_accel + pos, len - pos, "ACCEL_BATCH:");
-            for (int i = 0; i < BATCH_SIZE && pos < len; i++) {
-                format_timestamp(accel_batch[i].timestamp_ms, ts, sizeof(ts));
-                uint64_t ts_ms = parse_timestamp_ms(ts);
-                int w = snprintk(sensor_notify_buf_accel + pos, len - pos,
-                                "#%llu,%d,%d,%d", (unsigned long long)ts_ms,
-                                accel_batch[i].data[0], accel_batch[i].data[1], accel_batch[i].data[2]);
-                if (w < 0 || w >= len - pos) {
-                    break;
-                }
-                pos += w;
-            }
-            sensor_notify_buf_accel[len - 1] = '\0';
-        }
-
-        k_mutex_unlock(&notify_buf_mutex);
-
-        if (notify_enabled_ppg) {
-            printk("[PRINTER] Notify Data (PPG):\n%s\n", sensor_notify_buf_ppg);
-        }
-        if (notify_enabled_temp) {
-            printk("[PRINTER] Notify Data (TEMP):\n%s\n", sensor_notify_buf_temp);
-        }
-        if (notify_enabled_accel) {
-            printk("[PRINTER] Notify Data (ACCEL):\n%s\n", sensor_notify_buf_accel);
-        }
-
-        if (current_conn) {
-            int err, attempts;
-
-            if (notify_enabled_ppg) {
-                attempts = 0;
-                do {
-                    k_mutex_lock(&notify_buf_mutex, K_FOREVER);
-                    err = bt_gatt_notify(current_conn, ppg_char_attr,
-                                         sensor_notify_buf_ppg, strlen(sensor_notify_buf_ppg));
-                    k_mutex_unlock(&notify_buf_mutex);
-                    if (err == -ENOMEM) {
-                        k_msleep(100);
-                    } else {
-                        break;
-                    }
-                    attempts++;
-                } while (err == -ENOMEM && attempts < 5);
-            }
-
-            if (notify_enabled_temp) {
-                attempts = 0;
-                do {
-                    k_mutex_lock(&notify_buf_mutex, K_FOREVER);
-                    err = bt_gatt_notify(current_conn, temp_char_attr,
-                                         sensor_notify_buf_temp, strlen(sensor_notify_buf_temp));
-                    k_mutex_unlock(&notify_buf_mutex);
-                    if (err == -ENOMEM) {
-                        k_msleep(100);
-                    } else {
-                        break;
-                    }
-                    attempts++;
-                } while (err == -ENOMEM && attempts < 5);
-            }
-
-            if (notify_enabled_accel) {
-                attempts = 0;
-                do {
-                    k_mutex_lock(&notify_buf_mutex, K_FOREVER);
-                    err = bt_gatt_notify(current_conn, accel_char_attr,
-                                         sensor_notify_buf_accel, strlen(sensor_notify_buf_accel));
-                    k_mutex_unlock(&notify_buf_mutex);
-                    if (err == -ENOMEM) {
-                        k_msleep(100);
-                    } else {
-                        break;
-                    }
-                    attempts++;
-                } while (err == -ENOMEM && attempts < 5);
-            }
-        } else {
-            k_msleep(50);
-        }
-    }
-} */
-#define WAIT_MS 10  // how long to wait for at least one sample
+#define WAIT_MS 10  // how long to wait before checking again
 
 void printer_thread(void)
 {
     printk("[THREAD] printer_thread started\n");
 
     PPGSample ppg_batch[BATCH_SIZE];
-    TempSample temp_batch[BATCH_SIZE];
+    TempSample temp_sample;
     lis3dh_data_t accel_batch[BATCH_SIZE];
     char ts[64];
+    int total_ppg_sent = 0;
+    int total_accel_sent = 0;
+    bool temp_sent = false;
 
     while (1) {
         int ppg_count = 0, temp_count = 0, accel_count = 0;
 
-        // Grab as many as available for each sensor, but don't block forever
-        if (notify_enabled_ppg) {
-            while (ppg_count < BATCH_SIZE &&
-                   k_msgq_get(&ppg_msgq, &ppg_batch[ppg_count], K_NO_WAIT) == 0) {
-                ppg_count++;
+        // --- Collect PPG batch ---
+        if (notify_enabled_ppg &&
+            k_msgq_num_used_get(&ppg_msgq) >= BATCH_SIZE) 
+        {
+            for (int i = 0; i < BATCH_SIZE; i++) {
+                k_msgq_get(&ppg_msgq, &ppg_batch[i], K_NO_WAIT);
             }
+            ppg_count = BATCH_SIZE;
+            total_ppg_sent += ppg_count;
         }
 
-        if (notify_enabled_temp) {
-            while (temp_count < BATCH_SIZE &&
-                   k_msgq_get(&temp_msgq, &temp_batch[temp_count], K_NO_WAIT) == 0) {
-                temp_count++;
+        // --- Collect ACCEL batch ---
+        if (notify_enabled_accel &&
+            k_msgq_num_used_get(&accel_msgq) >= BATCH_SIZE) 
+        {
+            for (int i = 0; i < BATCH_SIZE; i++) {
+                k_msgq_get(&accel_msgq, &accel_batch[i], K_NO_WAIT);
             }
+            accel_count = BATCH_SIZE;
+            total_accel_sent += accel_count;
         }
 
-        if (notify_enabled_accel) {
-            while (accel_count < BATCH_SIZE &&
-                   k_msgq_get(&accel_msgq, &accel_batch[accel_count], K_NO_WAIT) == 0) {
-                accel_count++;
-            }
+        // --- Collect TEMP after MAX_SAMPLES ---
+        if (notify_enabled_temp &&
+            !temp_sent &&
+            total_ppg_sent >= MAX_SAMPLES &&
+            total_accel_sent >= MAX_SAMPLES &&
+            k_msgq_num_used_get(&temp_msgq) >= 1) 
+        {
+            k_msleep(100);
+            k_msgq_get(&temp_msgq, &temp_sample, K_NO_WAIT);
+            temp_count = 1;
+            temp_sent = true;
         }
 
-        // If nothing to send, wait a bit before checking again
+        // If no batches ready, wait a bit
         if (ppg_count == 0 && temp_count == 0 && accel_count == 0) {
             k_msleep(WAIT_MS);
             continue;
         }
 
+        // Lock buffer before writing
         k_mutex_lock(&notify_buf_mutex, K_FOREVER);
 
-        if (notify_enabled_ppg && ppg_count > 0) {
+        // --- Format and prepare BLE data ---
+        if (ppg_count > 0) {
             int pos = 0, len = SENSOR_NOTIFY_BUF_SIZE;
             pos += snprintf(sensor_notify_buf_ppg + pos, len - pos, "PPG_BATCH:");
-            for (int i = 0; i < ppg_count && pos < len; i++) {
+            for (int i = 0; i < ppg_count; i++) {
                 format_timestamp(ppg_batch[i].timestamp_ms, ts, sizeof(ts));
                 uint64_t ts_ms = parse_timestamp_ms(ts);
-                int w = snprintk(sensor_notify_buf_ppg + pos, len - pos,
-                                "#%llu,%x,%x",
+                pos += snprintk(sensor_notify_buf_ppg + pos, len - pos,
+                                "#%llu,%lx,%lx",
                                 (unsigned long long)ts_ms,
                                 (unsigned long)ppg_batch[i].channels[0],
                                 (unsigned long)ppg_batch[i].channels[1]);
-                if (w < 0 || w >= len - pos) break;
-                pos += w;
             }
             sensor_notify_buf_ppg[len - 1] = '\0';
         }
 
-        if (notify_enabled_temp && temp_count > 0) {
+        if (accel_count > 0) {
             int pos = 0, len = SENSOR_NOTIFY_BUF_SIZE;
-            pos += snprintf(sensor_notify_buf_temp + pos, len - pos, "TEMP_BATCH:");
-            for (int i = 0; i < temp_count && pos < len; i++) {
-                format_timestamp(temp_batch[i].timestamp_ms, ts, sizeof(ts));
-                uint64_t ts_ms = parse_timestamp_ms(ts);
-                int w = snprintk(sensor_notify_buf_temp + pos, len - pos,
-                                "#%llu,%.2f",
-                                (unsigned long long)ts_ms,
-                                (double)temp_batch[i].temperature_c);
-                if (w < 0 || w >= len - pos) break;
-                pos += w;
-            }
-            sensor_notify_buf_temp[len - 1] = '\0';
-        }
-
-        if (notify_enabled_accel && accel_count > 0) {
-            int pos = 0, len = SENSOR_NOTIFY_BUF_SIZE;
-            pos += snprintk(sensor_notify_buf_accel + pos, len - pos, "ACCEL_BATCH:");
-            for (int i = 0; i < accel_count && pos < len; i++) {
+            pos += snprintf(sensor_notify_buf_accel + pos, len - pos, "ACCEL_BATCH:");
+            for (int i = 0; i < accel_count; i++) {
                 format_timestamp(accel_batch[i].timestamp_ms, ts, sizeof(ts));
                 uint64_t ts_ms = parse_timestamp_ms(ts);
-                int w = snprintk(sensor_notify_buf_accel + pos, len - pos,
+                pos += snprintk(sensor_notify_buf_accel + pos, len - pos,
                                 "#%llu,%d,%d,%d",
                                 (unsigned long long)ts_ms,
                                 accel_batch[i].data[0],
                                 accel_batch[i].data[1],
                                 accel_batch[i].data[2]);
-                if (w < 0 || w >= len - pos) break;
-                pos += w;
             }
             sensor_notify_buf_accel[len - 1] = '\0';
         }
 
+        if (temp_count > 0) {
+            int pos = 0, len = SENSOR_NOTIFY_BUF_SIZE;
+            pos += snprintf(sensor_notify_buf_temp + pos, len - pos, "TEMP_BATCH:");
+            format_timestamp(temp_sample.timestamp_ms, ts, sizeof(ts));
+            uint64_t ts_ms = parse_timestamp_ms(ts);
+            pos += snprintk(sensor_notify_buf_temp + pos, len - pos,
+                            "#%llu,%d,%d",
+                            (unsigned long long)ts_ms,
+                            temp_sample.temperature_c, (int)temp_sample.battery_pct);
+            sensor_notify_buf_temp[len - 1] = '\0';
+        }
+
         k_mutex_unlock(&notify_buf_mutex);
 
-        // Print to console (optional)
-        if (notify_enabled_ppg && ppg_count > 0)
+         if (ppg_count > 0)
             printk("[PRINTER] Notify Data (PPG):\n%s\n", sensor_notify_buf_ppg);
-        if (notify_enabled_temp && temp_count > 0)
+        if (temp_count > 0)
             printk("[PRINTER] Notify Data (TEMP):\n%s\n", sensor_notify_buf_temp);
-        if (notify_enabled_accel && accel_count > 0)
+        if (accel_count > 0)
             printk("[PRINTER] Notify Data (ACCEL):\n%s\n", sensor_notify_buf_accel);
 
-        // Send via BLE
+        // --- Send via BLE ---
         if (current_conn) {
-            if (notify_enabled_ppg && ppg_count > 0)
+            if (ppg_count > 0)
                 bt_gatt_notify(current_conn, ppg_char_attr, sensor_notify_buf_ppg, strlen(sensor_notify_buf_ppg));
-            if (notify_enabled_temp && temp_count > 0)
+            if (temp_count > 0)
                 bt_gatt_notify(current_conn, temp_char_attr, sensor_notify_buf_temp, strlen(sensor_notify_buf_temp));
-            if (notify_enabled_accel && accel_count > 0)
+            if (accel_count > 0)
                 bt_gatt_notify(current_conn, accel_char_attr, sensor_notify_buf_accel, strlen(sensor_notify_buf_accel));
+        }
+
+        // --- After sending TEMP (final batch of this cycle) ---
+        if (temp_sent) {
+            printk("[THREAD] All data sent. Going to System ON sleep...\n");
+
+            // Reset counters for next cycle
+            total_ppg_sent = 0;
+            total_accel_sent = 0;
+            temp_sent = false;
+
+            // Reset sensor thread counters so collection restarts
+            p_cnt = 0;
+            a_cnt = 0;
+
+
+            // Set alarm for 50 seconds from now
+            rtc2_set_alarm(50000);
+
+            // Sleep until alarm triggers
+            while (!rtc2_alarm_triggered()) {
+                __WFE(); // Wait for event
+            }
+
+            printk("[THREAD] Woke up, starting new data collection cycle.\n");
         }
     }
 }
+
 
 
 K_THREAD_DEFINE(sensor_tid, 1280, sensor_thread, NULL, NULL, NULL, 5, 0, 0);

@@ -169,6 +169,142 @@
     ],
     [
         [
+            "bool counter_is_counting_up",
+            "const struct device *dev"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "uint8_t counter_get_num_of_channels",
+            "const struct device *dev"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "uint32_t counter_get_frequency",
+            "const struct device *dev"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "uint32_t counter_us_to_ticks",
+            "const struct device *dev, uint64_t us"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "uint64_t counter_ticks_to_us",
+            "const struct device *dev, uint32_t ticks"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "uint32_t counter_get_max_top_value",
+            "const struct device *dev"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_start",
+            "const struct device *dev"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_stop",
+            "const struct device *dev"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_get_value",
+            "const struct device *dev, uint32_t *ticks"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_get_value_64",
+            "const struct device *dev, uint64_t *ticks"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_set_channel_alarm",
+            "const struct device *dev,\n\t\t\t\t\tuint8_t chan_id,\n\t\t\t\t\tconst struct counter_alarm_cfg *alarm_cfg"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_cancel_channel_alarm",
+            "const struct device *dev,\n\t\t\t\t\t   uint8_t chan_id"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_set_top_value",
+            "const struct device *dev,\n\t\t\t\t    const struct counter_top_cfg *cfg"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_get_pending_int",
+            "const struct device *dev"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "uint32_t counter_get_top_value",
+            "const struct device *dev"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "int counter_set_guard_period",
+            "const struct device *dev,\n\t\t\t\t\tuint32_t ticks,\n\t\t\t\t\tuint32_t flags"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
+            "uint32_t counter_get_guard_period",
+            "const struct device *dev,\n\t\t\t\t\t    uint32_t flags"
+        ],
+        "counter.h",
+        true
+    ],
+    [
+        [
             "int entropy_get_entropy",
             "const struct device *dev,\n\t\t\t\t  uint8_t *buffer,\n\t\t\t\t  uint16_t length"
         ],
@@ -301,6 +437,86 @@
             "const struct device *dev"
         ],
         "i2c.h",
+        true
+    ],
+    [
+        [
+            "int rtc_set_time",
+            "const struct device *dev, const struct rtc_time *timeptr"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_get_time",
+            "const struct device *dev, struct rtc_time *timeptr"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_alarm_get_supported_fields",
+            "const struct device *dev, uint16_t id,\n\t\t\t\t\t     uint16_t *mask"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_alarm_set_time",
+            "const struct device *dev, uint16_t id, uint16_t mask,\n\t\t\t\t const struct rtc_time *timeptr"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_alarm_get_time",
+            "const struct device *dev, uint16_t id, uint16_t *mask,\n\t\t\t\t struct rtc_time *timeptr"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_alarm_is_pending",
+            "const struct device *dev, uint16_t id"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_alarm_set_callback",
+            "const struct device *dev, uint16_t id,\n\t\t\t\t     rtc_alarm_callback callback, void *user_data"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_update_set_callback",
+            "const struct device *dev, rtc_update_callback callback,\n\t\t\t\t      void *user_data"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_set_calibration",
+            "const struct device *dev, int32_t calibration"
+        ],
+        "rtc.h",
+        true
+    ],
+    [
+        [
+            "int rtc_get_calibration",
+            "const struct device *dev, int32_t *calibration"
+        ],
+        "rtc.h",
         true
     ],
     [
@@ -1849,142 +2065,6 @@
     ],
     [
         [
-            "bool counter_is_counting_up",
-            "const struct device *dev"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "uint8_t counter_get_num_of_channels",
-            "const struct device *dev"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "uint32_t counter_get_frequency",
-            "const struct device *dev"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "uint32_t counter_us_to_ticks",
-            "const struct device *dev, uint64_t us"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "uint64_t counter_ticks_to_us",
-            "const struct device *dev, uint32_t ticks"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "uint32_t counter_get_max_top_value",
-            "const struct device *dev"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_start",
-            "const struct device *dev"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_stop",
-            "const struct device *dev"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_get_value",
-            "const struct device *dev, uint32_t *ticks"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_get_value_64",
-            "const struct device *dev, uint64_t *ticks"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_set_channel_alarm",
-            "const struct device *dev,\n\t\t\t\t\tuint8_t chan_id,\n\t\t\t\t\tconst struct counter_alarm_cfg *alarm_cfg"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_cancel_channel_alarm",
-            "const struct device *dev,\n\t\t\t\t\t   uint8_t chan_id"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_set_top_value",
-            "const struct device *dev,\n\t\t\t\t    const struct counter_top_cfg *cfg"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_get_pending_int",
-            "const struct device *dev"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "uint32_t counter_get_top_value",
-            "const struct device *dev"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "int counter_set_guard_period",
-            "const struct device *dev,\n\t\t\t\t\tuint32_t ticks,\n\t\t\t\t\tuint32_t flags"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
-            "uint32_t counter_get_guard_period",
-            "const struct device *dev,\n\t\t\t\t\t    uint32_t flags"
-        ],
-        "counter.h",
-        false
-    ],
-    [
-        [
             "int dac_channel_setup",
             "const struct device *dev,\n\t\t\t\tconst struct dac_channel_cfg *channel_cfg"
         ],
@@ -3053,86 +3133,6 @@
             "const struct device *dev"
         ],
         "retained_mem.h",
-        false
-    ],
-    [
-        [
-            "int rtc_set_time",
-            "const struct device *dev, const struct rtc_time *timeptr"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_get_time",
-            "const struct device *dev, struct rtc_time *timeptr"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_alarm_get_supported_fields",
-            "const struct device *dev, uint16_t id,\n\t\t\t\t\t     uint16_t *mask"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_alarm_set_time",
-            "const struct device *dev, uint16_t id, uint16_t mask,\n\t\t\t\t const struct rtc_time *timeptr"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_alarm_get_time",
-            "const struct device *dev, uint16_t id, uint16_t *mask,\n\t\t\t\t struct rtc_time *timeptr"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_alarm_is_pending",
-            "const struct device *dev, uint16_t id"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_alarm_set_callback",
-            "const struct device *dev, uint16_t id,\n\t\t\t\t     rtc_alarm_callback callback, void *user_data"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_update_set_callback",
-            "const struct device *dev, rtc_update_callback callback,\n\t\t\t\t      void *user_data"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_set_calibration",
-            "const struct device *dev, int32_t calibration"
-        ],
-        "rtc.h",
-        false
-    ],
-    [
-        [
-            "int rtc_get_calibration",
-            "const struct device *dev, int32_t *calibration"
-        ],
-        "rtc.h",
         false
     ],
     [

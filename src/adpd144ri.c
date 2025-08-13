@@ -35,7 +35,7 @@ int adpd144ri_configure_spo2_hr(const struct device *i2c_dev) {
     rc += adpd144ri_write_reg16(i2c_dev, 0x02, 0x0005);     
     rc += adpd144ri_write_reg16(i2c_dev, 0x01, 0x009F);
     rc += adpd144ri_write_reg16(i2c_dev, 0x11, 0x30A9);
-    rc += adpd144ri_write_reg16(i2c_dev, 0x12, 0x0384);
+    rc += adpd144ri_write_reg16(i2c_dev, 0x12, 0x013f);
     rc += adpd144ri_write_reg16(i2c_dev, 0x15, 0x0330);
     rc += adpd144ri_write_reg16(i2c_dev, 0x14, 0x0116);
     rc += adpd144ri_write_reg16(i2c_dev, 0x18, 0x3FFF);

@@ -37,4 +37,4 @@ void bt_ready(int err);
 void connected(struct bt_conn *conn, uint8_t err);
 void disconnected(struct bt_conn *conn, uint8_t reason);
 
-#endif // BLE_H_
+#endif 

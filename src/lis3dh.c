@@ -1,65 +1,3 @@
-/*#include "lis3dh.h"
-#include <zephyr/kernel.h>
-#include <zephyr/drivers/i2c.h>
-#include <zephyr/sys/printk.h>
-
-static bool lis3dh_write_reg(const lis3dh_sensor_t *dev, uint8_t reg, uint8_t val) {
-    return i2c_reg_write_byte(dev->i2c_dev, dev->i2c_addr, reg, val) == 0;
-}
-
-static bool lis3dh_read_reg(const lis3dh_sensor_t *dev, uint8_t reg, uint8_t *val) {
-    return i2c_reg_read_byte(dev->i2c_dev, dev->i2c_addr, reg, val) == 0;
-}
-
-bool lis3dh_init(lis3dh_sensor_t *dev, const struct device *i2c_dev, uint8_t addr) {
-    dev->i2c_dev = i2c_dev;
-    dev->i2c_addr = addr;
-
-    uint8_t who_am_i = 0;
-    if (!lis3dh_read_reg(dev, LIS3DH_REG_WHO_AM_I, &who_am_i)) {
-        printk("[LIS3DH] Failed to read WHO_AM_I\n");
-        return false;
-    }
-
-    if (who_am_i != 0x33) {
-        printk("[LIS3DH] Unexpected WHO_AM_I value: 0x%02X\n", who_am_i);
-        return false;
-    }
-
-    // Enable XYZ axes and set 10Hz data rate
-    if (!lis3dh_write_reg(dev, LIS3DH_REG_CTRL1, 0x27)) return false;
-
-    // Enable click interrupt on INT1
-    if (!lis3dh_write_reg(dev, LIS3DH_REG_CTRL3, 0x80)) return false;
-
-    // Latch interrupt if required
-    if (!lis3dh_write_reg(dev, LIS3DH_REG_CTRL5, 0x08)) return false;
-
-    return true;
-}
-
-bool lis3dh_read_data(lis3dh_sensor_t *dev, lis3dh_sample_t *sample) {
-    uint8_t raw_data[6];
-    uint8_t start_reg = LIS3DH_OUT_X_L | LIS3DH_AUTO_INCREMENT;
-
-    int ret = i2c_write_read(dev->i2c_dev, dev->i2c_addr,
-                            &start_reg, 1,
-                            raw_data, sizeof(raw_data));
-    if (ret < 0) {
-        printk("[LIS3DH] i2c_read failed: %d\n", ret);
-        return false;
-    }
-
-    sample->data[0] = (int16_t)(raw_data[1] << 8 | raw_data[0]);  // X-axis
-    sample->data[1] = (int16_t)(raw_data[3] << 8 | raw_data[2]);  // Y-axis
-    sample->data[2] = (int16_t)(raw_data[5] << 8 | raw_data[4]);  // Z-axis
-
-    sample->timestamp_ms = get_timestamp_ms();
-
-    return true;
-}*/
-
-
 #include "lis3dh.h"
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
@@ -89,7 +27,7 @@ bool lis3dh_init(lis3dh_sensor_t *dev, const struct device *i2c_dev, uint8_t add
     }
 
     // Enable XYZ axes and set 10Hz data rate
-    if (!lis3dh_write_reg(dev, LIS3DH_REG_CTRL1, 0x27)) return false;
+    if (!lis3dh_write_reg(dev, LIS3DH_REG_CTRL1, 0x57)) return false;
 
     // Enable click interrupt on INT1
     if (!lis3dh_write_reg(dev, LIS3DH_REG_CTRL3, 0x80)) return false;

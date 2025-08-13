@@ -206,6 +206,9 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/console/CMakeFiles/drivers__console.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/console/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/console/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/counter/CMakeFiles/drivers__counter.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/counter/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/counter/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/entropy/CMakeFiles/drivers__entropy.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/entropy/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/entropy/CMakeFiles/rebuild_cache.dir
@@ -220,6 +223,9 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/pinctrl/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/pinctrl/renesas/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/pinctrl/renesas/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/rtc/CMakeFiles/drivers__rtc.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/rtc/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/rtc/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/serial/CMakeFiles/drivers__serial.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/serial/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/serial/CMakeFiles/rebuild_cache.dir
