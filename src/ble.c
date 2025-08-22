@@ -17,25 +17,20 @@ volatile bool notify_enabled_temp = false;
 volatile bool notify_enabled_accel = false;
 struct k_mutex notify_buf_mutex;
 
-static struct bt_uuid_128 ppg_service_uuid = BT_UUID_INIT_128(
+/* ---------- UUIDs ---------- */
+/* One Service UUID */
+static struct bt_uuid_128 vitals_service_uuid = BT_UUID_INIT_128(
     0xac, 0xdf, 0xd2, 0x00, 0x4b, 0xd6, 0x69, 0xac,
     0x97, 0x42, 0x94, 0x26, 0x3e, 0x24, 0x9e, 0xf6);
 
+/* Three Characteristic UUIDs */
 static struct bt_uuid_128 ppg_char_uuid = BT_UUID_INIT_128(
     0xb7, 0x5c, 0xb4, 0x7b, 0xb8, 0x27, 0x5a, 0xa1,
     0x20, 0x44, 0x4b, 0x9c, 0xd4, 0x4a, 0x95, 0x4c);
 
-static struct bt_uuid_128 temp_service_uuid = BT_UUID_INIT_128(
-    0xbc, 0xdf, 0xd2, 0x00, 0x4b, 0xd6, 0x69, 0xac,
-    0x97, 0x42, 0x94, 0x26, 0x3e, 0x24, 0x9e, 0xf6);
-
 static struct bt_uuid_128 temp_char_uuid = BT_UUID_INIT_128(
     0xd2, 0xf8, 0x67, 0x5a, 0xce, 0x5a, 0x64, 0x86,
     0xfe, 0x43, 0xf6, 0x7a, 0x90, 0x67, 0xf6, 0x66);
-
-static struct bt_uuid_128 accel_service_uuid = BT_UUID_INIT_128(
-    0xcc, 0xdf, 0xd2, 0x00, 0x4b, 0xd6, 0x69, 0xac,
-    0x97, 0x42, 0x94, 0x26, 0x3e, 0x24, 0x9e, 0xf6);
 
 static struct bt_uuid_128 accel_char_uuid = BT_UUID_INIT_128(
     0x98, 0x65, 0x12, 0xa1, 0xd8, 0x03, 0xb3, 0x93,
@@ -45,6 +40,7 @@ const struct bt_gatt_attr *ppg_char_attr = NULL;
 const struct bt_gatt_attr *temp_char_attr = NULL;
 const struct bt_gatt_attr *accel_char_attr = NULL;
 
+/* ---------- Read Callbacks ---------- */
 static ssize_t read_ppg(struct bt_conn *conn, const struct bt_gatt_attr *attr,
                         void *buf, uint16_t len, uint16_t offset)
 {
@@ -78,6 +74,7 @@ static ssize_t read_accel(struct bt_conn *conn, const struct bt_gatt_attr *attr,
     return ret;
 }
 
+/* ---------- CCCD Callbacks ---------- */
 static void ccc_cfg_changed_ppg(const struct bt_gatt_attr *attr, uint16_t value)
 {
     notify_enabled_ppg = (value == BT_GATT_CCC_NOTIFY);
@@ -93,19 +90,27 @@ static void ccc_cfg_changed_accel(const struct bt_gatt_attr *attr, uint16_t valu
     notify_enabled_accel = (value == BT_GATT_CCC_NOTIFY);
 }
 
-/* GATT service definitions */
-BT_GATT_SERVICE_DEFINE(ppg_svc,
-    BT_GATT_PRIMARY_SERVICE(&ppg_service_uuid),
+/* ---------- Single Service with 3 Characteristics ---------- */
+BT_GATT_SERVICE_DEFINE(vitals_svc,
+    BT_GATT_PRIMARY_SERVICE(&vitals_service_uuid),
+
+    /* PPG Characteristic */
     BT_GATT_CHARACTERISTIC(&ppg_char_uuid.uuid,
                            BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
                            BT_GATT_PERM_READ,
                            read_ppg, NULL, NULL),
     BT_GATT_CCC(ccc_cfg_changed_ppg,
-                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE)
-);
+                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 
-BT_GATT_SERVICE_DEFINE(temp_svc,
-    BT_GATT_PRIMARY_SERVICE(&temp_service_uuid),
+     /* Accel Characteristic */
+    BT_GATT_CHARACTERISTIC(&accel_char_uuid.uuid,
+                           BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
+                           BT_GATT_PERM_READ,
+                           read_accel, NULL, NULL),
+    BT_GATT_CCC(ccc_cfg_changed_accel,
+                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+
+    /* Temp Characteristic */
     BT_GATT_CHARACTERISTIC(&temp_char_uuid.uuid,
                            BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
                            BT_GATT_PERM_READ,
@@ -114,23 +119,15 @@ BT_GATT_SERVICE_DEFINE(temp_svc,
                 BT_GATT_PERM_READ | BT_GATT_PERM_WRITE)
 );
 
-BT_GATT_SERVICE_DEFINE(accel_svc,
-    BT_GATT_PRIMARY_SERVICE(&accel_service_uuid),
-    BT_GATT_CHARACTERISTIC(&accel_char_uuid.uuid,
-                           BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
-                           BT_GATT_PERM_READ,
-                           read_accel, NULL, NULL),
-    BT_GATT_CCC(ccc_cfg_changed_accel,
-                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE)
-);
-
+/* Assign characteristic pointers */
 static void assign_attr_pointers(void)
 {
-    ppg_char_attr = &ppg_svc.attrs[2];
-    temp_char_attr = &temp_svc.attrs[2];
-    accel_char_attr = &accel_svc.attrs[2];
+    ppg_char_attr   = &vitals_svc.attrs[2];
+    accel_char_attr = &vitals_svc.attrs[5]; 
+    temp_char_attr  = &vitals_svc.attrs[8];
 }
 
+/* ---------- BLE Helpers ---------- */
 void print_ble_address(void)
 {
     bt_addr_le_t addr;
@@ -148,7 +145,7 @@ void connected(struct bt_conn *conn, uint8_t err)
         return;
     }
     current_conn = bt_conn_ref(conn);
-    printk("[BLE] Besquare-Yantram Device Connected\n");
+    printk("[BLE] Device Connected\n");
 }
 
 void disconnected(struct bt_conn *conn, uint8_t reason)
@@ -176,7 +173,8 @@ const struct bt_data ad[] = {
     BT_DATA(BT_DATA_NAME_COMPLETE, "Vitals", 6),
     BT_DATA_BYTES(BT_DATA_UUID128_ALL,
                   0xac, 0xdf, 0xd2, 0x00, 0x4b, 0xd6, 0x69, 0xac,
-                  0x97, 0x42, 0x94, 0x26, 0x3e, 0x24, 0x9e, 0xf6)};
+                  0x97, 0x42, 0x94, 0x26, 0x3e, 0x24, 0x9e, 0xf6)
+};
 
 void bt_ready(int err)
 {
