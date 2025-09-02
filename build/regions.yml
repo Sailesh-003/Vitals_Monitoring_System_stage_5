@@ -1,3 +1,11 @@
+external_flash:
+  base_address: 0x0
+  default_driver_kconfig: CONFIG_PM_OVERRIDE_EXTERNAL_DRIVER_CHECK
+  device: DT_CHOSEN(nordic_pm_ext_flash)
+  dynamic_partition: null
+  name: external_flash
+  placement_strategy: start_to_end
+  size: 0x200000
 flash_primary:
   base_address: 0x0
   default_driver_kconfig: CONFIG_SOC_FLASH_NRF

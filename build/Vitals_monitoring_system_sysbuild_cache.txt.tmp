@@ -10,6 +10,7 @@ CACHED_SHIELD:STRING=
 FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[c:/users/saile/appdata/local/programs/python/python38/python.exe][found components: Interpreter ][v3.8.0(3.8)]
 HWM:INTERNAL=v2
 HWMv2:INTERNAL=True
+STATIC_PM_FILE_HASH:INTERNAL=19074ae332d9e4d6bdce21920b423201
 Vitals_monitoring_system_NCS_RUNNER_HEX:INTERNAL=C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/merged.hex
 WEST:INTERNAL=c:/users/saile/appdata/local/programs/python/python38/python.exe;-m;west
 WEST_PYTHON:UNINITIALIZED=c:/users/saile/appdata/local/programs/python/python38/python.exe

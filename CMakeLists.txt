@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(Vitals_monitoring_system)
 
+
+set(PARTITION_MANAGER_CONFIG ${CMAKE_CURRENT_SOURCE_DIR}/pm.yml)
 # Add src/ as an include directory so headers like ble.h are found
+target_link_libraries(app PUBLIC m)
+
 target_include_directories(app PRIVATE src)
 
 # Add all your C source files

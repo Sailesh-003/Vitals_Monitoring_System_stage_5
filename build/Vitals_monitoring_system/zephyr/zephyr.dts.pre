@@ -1045,6 +1045,10 @@ arduino_spi: &spi2 {
 
 
 
+&uart0{
+    status = "okay";
+};
+
 
 &rtc2 {
     status = "okay";
@@ -1070,6 +1074,52 @@ arduino_spi: &spi2 {
         zephyr,reference = "ADC_REF_INTERNAL";
         zephyr,acquisition-time = <0>;
         zephyr,input-positive = <6>;
+    };
+};
+
+
+/ {
+    chosen {
+        nordic,pm-ext-flash = &w25q16;
+        zephyr,flash = &flash0;
+    };
+};
+
+&pinctrl {
+    spi_master_default: spi_master_default {
+        group1 {
+            psels = <((((((0) * 32U) + (31)) & 0x1FFU) << 0U) | ((4U & 0xFFU) << 24U))>,
+                    <((((((0) * 32U) + (30)) & 0x1FFU) << 0U) | ((5U & 0xFFU) << 24U))>,
+                    <((((((0) * 32U) + (29)) & 0x1FFU) << 0U) | ((6U & 0xFFU) << 24U))>;
+        };
+    };
+    spi_master_sleep: spi_master_sleep {
+        group1 {
+            psels = <((((((0) * 32U) + (31)) & 0x1FFU) << 0U) | ((4U & 0xFFU) << 24U))>,
+                    <((((((0) * 32U) + (30)) & 0x1FFU) << 0U) | ((5U & 0xFFU) << 24U))>,
+                    <((((((0) * 32U) + (29)) & 0x1FFU) << 0U) | ((6U & 0xFFU) << 24U))>;
+            low-power-enable;
+        };
+    };
+};
+
+&spi1 {
+    status = "okay";
+    pinctrl-0 = <&spi_master_default>;
+    pinctrl-1 = <&spi_master_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    cs-gpios = <&gpio0 28 (1 << 0)>;
+
+    w25q16: w25q16@0 {
+        compatible = "jedec,spi-nor";
+        reg = <0>;
+        spi-max-frequency = <8000000>;
+        jedec-id = [ ef 40 15 ];
+        size = <0x1000000>;
+        label = "w25q16";
+        status = "okay";
+
     };
 };
 # 0 "<command-line>" 2

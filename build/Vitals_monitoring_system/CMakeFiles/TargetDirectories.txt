@@ -63,9 +63,9 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/crc/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/CMakeFiles/rebuild_cache.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/newlib/CMakeFiles/lib__libc__newlib.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/newlib/CMakeFiles/edit_cache.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/newlib/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/minimal/CMakeFiles/lib__libc__minimal.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/minimal/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/minimal/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/common/CMakeFiles/lib__libc__common.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/common/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/common/CMakeFiles/rebuild_cache.dir
@@ -149,6 +149,8 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/stats/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/storage/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/storage/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/storage/flash_map/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/storage/flash_map/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/task_wdt/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/task_wdt/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/testsuite/CMakeFiles/edit_cache.dir
@@ -169,6 +171,16 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/bluetooth/services/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/bluetooth/lib/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/bluetooth/lib/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/modules/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/modules/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/modules/kernel_service/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/modules/kernel_service/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/modules/kernel_service/thread/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/modules/kernel_service/thread/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/backends/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/subsys/shell/backends/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/disk/CMakeFiles/edit_cache.dir
@@ -212,6 +224,9 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/entropy/CMakeFiles/drivers__entropy.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/entropy/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/entropy/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/flash/CMakeFiles/drivers__flash.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/flash/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/flash/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/gpio/CMakeFiles/drivers__gpio.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/gpio/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/gpio/CMakeFiles/rebuild_cache.dir
@@ -229,6 +244,9 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/serial/CMakeFiles/drivers__serial.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/serial/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/serial/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/spi/CMakeFiles/drivers__spi.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/spi/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/spi/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/timer/CMakeFiles/drivers__timer.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/timer/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/timer/CMakeFiles/rebuild_cache.dir
@@ -314,6 +332,9 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/drivers/mpsl/clock_control/CMakeFiles/..__nrf__drivers__mpsl__clock_control.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/drivers/mpsl/clock_control/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/drivers/mpsl/clock_control/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/drivers/mpsl/flash_sync/CMakeFiles/..__nrf__drivers__mpsl__flash_sync.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/drivers/mpsl/flash_sync/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/drivers/mpsl/flash_sync/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/drivers/serial/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/drivers/serial/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/nrf/tests/CMakeFiles/edit_cache.dir
@@ -379,6 +400,7 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/libmetal/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/liblc3/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/liblc3/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/littlefs/CMakeFiles/modules__littlefs.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/littlefs/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/littlefs/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/modules/loramac-node/CMakeFiles/edit_cache.dir

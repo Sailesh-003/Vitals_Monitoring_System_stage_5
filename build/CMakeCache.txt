@@ -170,6 +170,8 @@ FIND_PACKAGE_MESSAGE_DETAILS_Python3:INTERNAL=[c:/users/saile/appdata/local/prog
 HWM:INTERNAL=v2
 //Zephyr hardware model
 HWMv2:INTERNAL=True
+//nRF Connect SDK static partition manager file hash
+STATIC_PM_FILE_HASH:INTERNAL=19074ae332d9e4d6bdce21920b423201
 //nRF Connect SDK partition managere controlled hex file
 Vitals_monitoring_system_NCS_RUNNER_HEX:INTERNAL=C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/merged.hex
 //West

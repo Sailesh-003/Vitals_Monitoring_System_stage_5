@@ -1,4 +1,4 @@
-# Install script for directory: C:/ncs/v2.9.1/zephyr/lib/libc/newlib
+# Install script for directory: C:/ncs/v2.9.1/zephyr/drivers/flash
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,6 +40,6 @@ endif()
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
 if(CMAKE_INSTALL_LOCAL_ONLY)
-  file(WRITE "C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/newlib/install_local_manifest.txt"
+  file(WRITE "C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/flash/install_local_manifest.txt"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

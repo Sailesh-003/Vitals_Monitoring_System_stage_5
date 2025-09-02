@@ -26,7 +26,7 @@ bool lis3dh_init(lis3dh_sensor_t *dev, const struct device *i2c_dev, uint8_t add
         return false;
     }
 
-    // Enable XYZ axes and set 10Hz data rate
+    // Enable XYZ axes and set 100Hz data rate
     if (!lis3dh_write_reg(dev, LIS3DH_REG_CTRL1, 0x57)) return false;
 
     // Enable click interrupt on INT1
