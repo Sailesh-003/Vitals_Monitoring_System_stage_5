@@ -22,11 +22,14 @@
 
 #define I2C_NODE DT_NODELABEL(i2c0)
 
-#define BATCH_SIZE 6
-#define MSGQ_SIZE 30
+#define BATCH_SIZE 25
+#define MSGQ_SIZE 100
 #define BT_ATT_MTU_DEFAULT 23
+#define FORMAT_BATCH_SIZE 6
+#define MAX_LINE_BUF 256
 
-#define MAX_SAMPLES 1998
+
+#define MAX_SAMPLES 12000
 
 #define I2C_MUTEX_TIMEOUT  K_MSEC(5)  // Max wait time for I2C access
 
@@ -266,7 +269,7 @@ void sensor_thread(void *p1, void *p2, void *p3)
         }
 
         /* small sleep to yield CPU and reduce I2C bus contention */
-        k_msleep(30);
+        k_msleep(5);
     }
 
     /* sensor thread done */
@@ -274,7 +277,7 @@ void sensor_thread(void *p1, void *p2, void *p3)
     return;
 }
 
-/* --- printer thread: reads in batches of BATCH_SIZE and writes to external flash --- */
+
 void printer_thread(void *p1, void *p2, void *p3)
 {
     printk("[THREAD] printer_thread started\n");
@@ -282,17 +285,15 @@ void printer_thread(void *p1, void *p2, void *p3)
     PPGSample ppg_batch[BATCH_SIZE];
     TempSample temp_sample;
     lis3dh_data_t accel_batch[BATCH_SIZE];
-    //char ts[64];
 
     uint32_t total_ppg_written = 0;
     uint32_t total_accel_written = 0;
     bool temp_written = false;
 
-    //int p_count = 0, a_count = 0;
     while (1) {
         int ppg_count = 0, accel_count = 0, t_count = 0;
 
-        /* --- Try to gather PPG batch (wait up to 200ms total to accumulate) --- */
+        /* --- Try to gather PPG batch --- */
         for (int i = 0; i < BATCH_SIZE; i++) {
             if (k_msgq_get(&ppg_msgq, &ppg_batch[i], K_MSEC(200)) == 0) {
                 ppg_count++;
@@ -310,131 +311,75 @@ void printer_thread(void *p1, void *p2, void *p3)
             }
         }
 
-        /* --- Try to get TEMP if available (no long wait) --- */
+        /* --- Try to get TEMP sample --- */
         if (k_msgq_get(&temp_msgq, &temp_sample, K_NO_WAIT) == 0) {
             t_count = 1;
         }
 
-        /* If nothing to write, wait for either collection_sem (final) or a small timeout */
+        /* If nothing to write, check for completion or wait briefly */
         if (ppg_count == 0 && accel_count == 0 && t_count == 0) {
-            /* If collection_done was signalled, check if queues have drained */
             if (collection_done) {
-                /* small grace period for remaining data to arrive */
                 k_msleep(100);
-                /* If queues empty and temp was written, finish */
                 if (msgq_used_count_kmsgq(&ppg_msgq) == 0 &&
                     msgq_used_count_kmsgq(&accel_msgq) == 0 &&
                     (temp_written || msgq_used_count_kmsgq(&temp_msgq) > 0)) {
-                    /* Try to take remaining temp if still present */
                     if (!temp_written && k_msgq_get(&temp_msgq, &temp_sample, K_NO_WAIT) == 0) {
                         t_count = 1;
                     }
                 }
             }
-
-            /* If still nothing actionable, wait for final signal or timeout */
             if (ppg_count == 0 && accel_count == 0 && t_count == 0) {
-                /* wait for final collection signal but with timeout */
                 k_sem_take(&collection_sem, K_MSEC(500));
-                /* loop to re-check queues */
                 continue;
             }
         }
 
-        /* --- Write PPG batch if we have samples --- */
+        /* --- Write PPG raw data --- */
         if (ppg_count > 0) {
             struct fs_file_t file;
             fs_file_t_init(&file);
-            if (fs_open(&file, LFS_MOUNT_POINT "/ppg.txt", FS_O_CREATE | FS_O_WRITE | FS_O_APPEND) == 0) {
-                char buf[512];
-                int pos = 0, len = sizeof(buf);
-
-                pos += snprintf(buf + pos, len - pos, "PPG_BATCH:");
-                for (int i = 0; i < ppg_count; i++) {
-                    //format_timestamp(ppg_batch[i].timestamp_ms, ts, sizeof(ts));
-                    uint64_t ts_ms = ppg_batch[i].timestamp_ms;
-                    pos += snprintk(buf + pos, len - pos,
-                                    "#%llu,%lx,%lx",
-                                    (unsigned long long)ts_ms,
-                                    (unsigned long)ppg_batch[i].channels[0],
-                                    (unsigned long)ppg_batch[i].channels[1]);
-                }
-                buf[len - 1] = '\0';
-                fs_write(&file, buf, strlen(buf));
-                fs_write(&file, "\n", 1);
-
+            if (fs_open(&file, LFS_MOUNT_POINT "/ppg_raw.dat", FS_O_CREATE | FS_O_WRITE | FS_O_APPEND) == 0) {
+                fs_write(&file, &ppg_batch, sizeof(PPGSample) * ppg_count);
                 fs_sync(&file);
                 fs_close(&file);
                 total_ppg_written += ppg_count;
-                printk("[FS] Wrote %d PPG samples (total %u)\n", ppg_count, total_ppg_written);
+                printk("[FS] Wrote %d raw PPG samples (total %u)\n", ppg_count, total_ppg_written);
             } else {
-                LOG_ERR("Failed to open ppg.txt for append");
+                LOG_ERR("Failed to open ppg_raw.dat for append");
             }
         }
 
-        /* --- Write ACCEL batch if we have samples --- */
+        /* --- Write ACCEL raw data --- */
         if (accel_count > 0) {
             struct fs_file_t file;
             fs_file_t_init(&file);
-            if (fs_open(&file, LFS_MOUNT_POINT "/accel.txt", FS_O_CREATE | FS_O_WRITE | FS_O_APPEND) == 0) {
-                char buf[512];
-                int pos = 0, len = sizeof(buf);
-
-                pos += snprintf(buf + pos, len - pos, "ACCEL_BATCH:");
-                for (int i = 0; i < accel_count; i++) {
-                    //format_timestamp(accel_batch[i].timestamp_ms, ts, sizeof(ts));
-                    uint64_t ts_ms = accel_batch[i].timestamp_ms;
-                    pos += snprintk(buf + pos, len - pos,
-                                    "#%llu,%d,%d,%d",
-                                    (unsigned long long)ts_ms,
-                                    accel_batch[i].data[0],
-                                    accel_batch[i].data[1],
-                                    accel_batch[i].data[2]);
-                }
-                buf[len - 1] = '\0';
-                fs_write(&file, buf, strlen(buf));
-                fs_write(&file, "\n", 1);
-
+            if (fs_open(&file, LFS_MOUNT_POINT "/accel_raw.dat", FS_O_CREATE | FS_O_WRITE | FS_O_APPEND) == 0) {
+                fs_write(&file, &accel_batch, sizeof(lis3dh_data_t) * accel_count);
                 fs_sync(&file);
                 fs_close(&file);
                 total_accel_written += accel_count;
-                printk("[FS] Wrote %d ACCEL samples (total %u)\n", accel_count, total_accel_written);
+                printk("[FS] Wrote %d raw ACCEL samples (total %u)\n", accel_count, total_accel_written);
             } else {
-                LOG_ERR("Failed to open accel.txt for append");
+                LOG_ERR("Failed to open accel_raw.dat for append");
             }
         }
 
-        /* --- Write TEMP sample if available --- */
+        /* --- Write TEMP raw data --- */
         if (t_count > 0) {
             struct fs_file_t file;
             fs_file_t_init(&file);
-            if (fs_open(&file, LFS_MOUNT_POINT "/temp.txt", FS_O_CREATE | FS_O_WRITE | FS_O_APPEND) == 0) {
-                char buf[256];
-                int pos = 0, len = sizeof(buf);
-
-                pos += snprintf(buf + pos, len - pos, "TEMP_BATCH:");
-                //format_timestamp(temp_sample.timestamp_ms, ts, sizeof(ts));
-                uint64_t ts_ms = temp_sample.timestamp_ms;
-                pos += snprintk(buf + pos, len - pos,
-                                "#%llu,%d,%d",
-                                (unsigned long long)ts_ms,
-                                temp_sample.temperature_c,
-                                (int)temp_sample.battery_pct);
-
-                buf[len - 1] = '\0';
-                fs_write(&file, buf, strlen(buf));
-                fs_write(&file, "\n", 1);
-
+            if (fs_open(&file, LFS_MOUNT_POINT "/temp_raw.dat", FS_O_CREATE | FS_O_WRITE | FS_O_APPEND) == 0) {
+                fs_write(&file, &temp_sample, sizeof(TempSample));
                 fs_sync(&file);
                 fs_close(&file);
                 temp_written = true;
-                printk("[FS] Wrote TEMP sample\n");
+                printk("[FS] Wrote 1 raw TEMP sample\n");
             } else {
-                LOG_ERR("Failed to open temp.txt for append");
+                LOG_ERR("Failed to open temp_raw.dat for append");
             }
         }
 
-        /* --- Check if we're done: both totals reached MAX_SAMPLES and temp_written --- */
+        /* --- Check if we're done --- */
         if (total_ppg_written >= MAX_SAMPLES &&
             total_accel_written >= MAX_SAMPLES &&
             temp_written &&
@@ -443,21 +388,18 @@ void printer_thread(void *p1, void *p2, void *p3)
             printk("[PRINTER] All data written: PPG=%u, ACCEL=%u, TEMP=1\n",
                    total_ppg_written, total_accel_written);
 
-            /* Sync any remaining filesystem buffers (redundant but safe) */
             check_storage_usage();
-
-            /* Signal main that we are done */
             k_sem_give(&done_sem);
 
-            /* Exit thread */
             printk("[PRINTER] printer_thread exiting.\n");
             return;
         }
 
-        /* small yield */
-        k_msleep(10);
+        k_msleep(5);
     }
 }
+
+
 
 /* Thread stacks and data */
 K_THREAD_STACK_DEFINE(sensor_stack, 2048);
@@ -486,6 +428,7 @@ static int notify_chunk(const struct bt_gatt_attr *attr,
 }
 
 
+
 static int stream_file_over_ble(const char *path,
                                 const struct bt_gatt_attr *attr,
                                 volatile bool *notify_enabled_flag)
@@ -498,52 +441,138 @@ static int stream_file_over_ble(const char *path,
         return -EIO;
     }
 
-    /* Determine maximum BLE payload size */
     size_t mtu = bt_gatt_get_mtu(current_conn);
     size_t max_payload_len = (mtu > 3) ? (mtu - 3) : 20;
 
-    printk("[BLE_TX] Start streaming file: %s (MTU=%u, payload=%u)\n",
+    printk("[BLE_TX] Streaming file: %s (MTU=%u, payload=%u)\n",
            path, (unsigned int)mtu, (unsigned int)max_payload_len);
 
-    char line_buf[256];   /* enough to hold one line */
-    char c;
-    size_t idx = 0;
+    char line_buf[MAX_LINE_BUF];
+    size_t offset, chunk_len;
+    int tries, rc;
 
-    while (1) {
-        /* Stop streaming if notifications disabled */
-        if (!(*notify_enabled_flag)) {
-            printk("[BLE_TX] Notifications disabled, stopping stream\n");
-            break;
+    if (strstr(path, "ppg_raw") || strstr(path, "accel_raw")) {
+        /* For PPG and ACCEL, read and format in batches */
+        
+        if (strstr(path, "ppg_raw")) {
+            PPGSample samples[FORMAT_BATCH_SIZE];
+            while (1) {
+                ssize_t bytes_read = fs_read(&file, samples, sizeof(PPGSample) * FORMAT_BATCH_SIZE);
+                if (bytes_read < 0) {
+                    printk("[BLE_TX] Read error: %d\n", (int)bytes_read);
+                    break;
+                }
+                if (bytes_read == 0) {
+                    break; // EOF
+                }
+                int count = bytes_read / sizeof(PPGSample);
+                int pos = 0;
+                pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos, "PPG_BATCH:");
+                for (int i = 0; i < count; i++) {
+                    pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos,
+                                    "#%llu,%lx,%lx",
+                                    (unsigned long long)samples[i].timestamp_ms,
+                                    (unsigned long)samples[i].channels[0],
+                                    (unsigned long)samples[i].channels[1]);
+                }
+                line_buf[pos] = '\0';
+                size_t line_len = strlen(line_buf);
+
+                offset = 0;
+                while (offset < line_len) {
+                    chunk_len = MIN(max_payload_len, line_len - offset);
+                    tries = 0;
+                    while (tries < 5) {
+                        rc = bt_gatt_notify(current_conn, attr, line_buf + offset, chunk_len);
+                        if (rc == 0) break;
+                        if (rc == -EAGAIN) {
+                            tries++;
+                            k_msleep(5);
+                            continue;
+                        }
+                        printk("[BLE_TX] notify failed (%s) rc=%d\n", path, rc);
+                        fs_close(&file);
+                        return rc;
+                    }
+                    offset += chunk_len;
+                    k_msleep(2);
+                }
+            }
+        } else { /* accel_raw */
+            lis3dh_data_t samples[FORMAT_BATCH_SIZE];
+            while (1) {
+                ssize_t bytes_read = fs_read(&file, samples, sizeof(lis3dh_data_t) * FORMAT_BATCH_SIZE);
+                if (bytes_read < 0) {
+                    printk("[BLE_TX] Read error: %d\n", (int)bytes_read);
+                    break;
+                }
+                if (bytes_read == 0) {
+                    break; // EOF
+                }
+                int count = bytes_read / sizeof(lis3dh_data_t);
+                int pos = 0;
+                pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos, "ACCEL_BATCH:");
+                for (int i = 0; i < count; i++) {
+                    pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos,
+                                    "#%llu,%d,%d,%d",
+                                    (unsigned long long)samples[i].timestamp_ms,
+                                    samples[i].data[0],
+                                    samples[i].data[1],
+                                    samples[i].data[2]);
+                }
+                line_buf[pos] = '\0';
+                size_t line_len = strlen(line_buf);
+
+                offset = 0;
+                while (offset < line_len) {
+                    chunk_len = MIN(max_payload_len, line_len - offset);
+                    tries = 0;
+                    while (tries < 5) {
+                        rc = bt_gatt_notify(current_conn, attr, line_buf + offset, chunk_len);
+                        if (rc == 0) break;
+                        if (rc == -EAGAIN) {
+                            tries++;
+                            k_msleep(5);
+                            continue;
+                        }
+                        printk("[BLE_TX] notify failed (%s) rc=%d\n", path, rc);
+                        fs_close(&file);
+                        return rc;
+                    }
+                    offset += chunk_len;
+                    k_msleep(2);
+                }
+            }
         }
-
-        int rc = fs_read(&file, &c, 1);
-        if (rc == 0) {
-            /* EOF reached */
-            break;
-        } else if (rc < 0) {
-            printk("[BLE_TX] File read error: %d\n", rc);
-            break;
-        }
-
-        /* Build line until newline */
-        if (c != '\n' && idx < sizeof(line_buf) - 1) {
-            line_buf[idx++] = c;
-        } else {
-            line_buf[idx] = '\0';  /* terminate string */
+    } else if (strstr(path, "temp_raw")) {
+        /* For TEMP, read one sample at a time */
+        TempSample temp;
+        while (1) {
+            ssize_t bytes_read = fs_read(&file, &temp, sizeof(TempSample));
+            if (bytes_read < 0) {
+                printk("[BLE_TX] Read error: %d\n", (int)bytes_read);
+                break;
+            }
+            if (bytes_read == 0) {
+                break; // EOF
+            }
+            int pos = 0;
+            pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos, "TEMP_BATCH:");
+            pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos,
+                            "#%llu,%d,%d",
+                            (unsigned long long)temp.timestamp_ms,
+                            temp.temperature_c,
+                            (int)temp.battery_pct);
+            line_buf[pos] = '\0';
             size_t line_len = strlen(line_buf);
 
-            /* --- Send this line in BLE-sized chunks --- */
-            size_t offset = 0;
+            offset = 0;
             while (offset < line_len) {
-                size_t chunk_len = MIN(max_payload_len, line_len - offset);
-
-                int tries = 0;
+                chunk_len = MIN(max_payload_len, line_len - offset);
+                tries = 0;
                 while (tries < 5) {
-                    rc = bt_gatt_notify(current_conn, attr,
-                                        &line_buf[offset], chunk_len);
-                    if (rc == 0) {
-                        break;  /* success */
-                    }
+                    rc = bt_gatt_notify(current_conn, attr, line_buf + offset, chunk_len);
+                    if (rc == 0) break;
                     if (rc == -EAGAIN) {
                         tries++;
                         k_msleep(5);
@@ -553,12 +582,9 @@ static int stream_file_over_ble(const char *path,
                     fs_close(&file);
                     return rc;
                 }
-
                 offset += chunk_len;
-                k_msleep(2);  /* pacing */
+                k_msleep(2);
             }
-
-            idx = 0; /* reset for next line */
         }
     }
 
@@ -568,26 +594,27 @@ static int stream_file_over_ble(const char *path,
 }
 
 
-
 void ble_tx_thread(void *p1, void *p2, void *p3)
 {
     printk("[THREAD] ble_tx_thread started\n");
 
-    /* Wait a bit to let client connect and enable notifications (if it will) */
+    /* Wait to allow client connection and notifications */
     k_msleep(500);
 
     int rc;
-    rc = stream_file_over_ble(LFS_MOUNT_POINT "/ppg.txt", ppg_char_attr, &notify_enabled_ppg);
-    if (rc) printk("[BLE_TX] notify failed /lfs/ppg.txt rc=%d\n", rc);
 
-    rc = stream_file_over_ble(LFS_MOUNT_POINT "/accel.txt", accel_char_attr, &notify_enabled_accel);
-    if (rc) printk("[BLE_TX] notify failed /lfs/accel.txt rc=%d\n", rc);
+    rc = stream_file_over_ble(LFS_MOUNT_POINT "/ppg_raw.dat", ppg_char_attr, &notify_enabled_ppg);
+    if (rc) printk("[BLE_TX] notify failed /lfs/ppg_raw.dat rc=%d\n", rc);
 
-    rc = stream_file_over_ble(LFS_MOUNT_POINT "/temp.txt", temp_char_attr, &notify_enabled_temp);
-    if (rc) printk("[BLE_TX] notify failed /lfs/temp.txt rc=%d\n", rc);
+    rc = stream_file_over_ble(LFS_MOUNT_POINT "/accel_raw.dat", accel_char_attr, &notify_enabled_accel);
+    if (rc) printk("[BLE_TX] notify failed /lfs/accel_raw.dat rc=%d\n", rc);
 
-    printk("[BLE_TX] All files streamed (or attempted). Thread exiting.\n");
+    rc = stream_file_over_ble(LFS_MOUNT_POINT "/temp_raw.dat", temp_char_attr, &notify_enabled_temp);
+    if (rc) printk("[BLE_TX] notify failed /lfs/temp_raw.dat rc=%d\n", rc);
+
+    printk("[BLE_TX] All files streamed. Exiting thread.\n");
 }
+
 
 /* main */
 int main(void)
@@ -674,12 +701,3 @@ int main(void)
     printk("[MAIN] All done. Main returning.\n");
     return 0;
 }
-
-
-
-
-
-
-
-
-

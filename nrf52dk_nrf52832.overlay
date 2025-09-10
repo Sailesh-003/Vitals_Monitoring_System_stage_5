@@ -92,7 +92,7 @@
     w25q16: w25q16@0 {
         compatible = "jedec,spi-nor";
         reg = <0>;
-        spi-max-frequency = <8000000>; /* 1 MHz or adjust as needed */
+        spi-max-frequency = <8000000>; /* 8 MHz or adjust as needed */
         jedec-id = [ ef 40 15 ];       /* W25Q16 JEDEC ID */
         size = <0x1000000>;             /* 2 MB (ensure correct size for your chip) */
         label = "w25q16";

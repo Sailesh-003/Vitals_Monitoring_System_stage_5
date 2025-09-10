@@ -4,7 +4,7 @@
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/kernel.h>
 
-#define SENSOR_NOTIFY_BUF_SIZE 4096
+#define SENSOR_NOTIFY_BUF_SIZE 2048
 
 // Notification buffers for each sensor
 extern char sensor_notify_buf_ppg[SENSOR_NOTIFY_BUF_SIZE];
