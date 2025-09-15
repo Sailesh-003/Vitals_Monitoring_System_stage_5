@@ -40,6 +40,7 @@ bool lis3dh_init(lis3dh_sensor_t *dev, const struct device *i2c_dev, uint8_t add
 bool lis3dh_set_int_click_config(lis3dh_sensor_t *dev, const lis3dh_int_click_config_t *cfg);
 
 typedef struct {
+    uint16_t accel_sample_id;
     uint64_t timestamp_ms;
     int16_t data[3];
 } lis3dh_data_t;

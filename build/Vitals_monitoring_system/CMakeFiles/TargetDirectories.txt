@@ -63,9 +63,9 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/crc/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/CMakeFiles/rebuild_cache.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/minimal/CMakeFiles/lib__libc__minimal.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/minimal/CMakeFiles/edit_cache.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/minimal/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/newlib/CMakeFiles/lib__libc__newlib.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/newlib/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/newlib/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/common/CMakeFiles/lib__libc__common.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/common/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/libc/common/CMakeFiles/rebuild_cache.dir
@@ -85,9 +85,6 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/net_buf/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/os/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/os/CMakeFiles/rebuild_cache.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/os/zvfs/CMakeFiles/lib__os__zvfs.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/os/zvfs/CMakeFiles/edit_cache.dir
-C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/os/zvfs/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/utils/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/lib/utils/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/soc/CMakeFiles/edit_cache.dir
@@ -233,6 +230,9 @@ C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_syste
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/i2c/CMakeFiles/drivers__i2c.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/i2c/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/i2c/CMakeFiles/rebuild_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/led_strip/CMakeFiles/drivers__led_strip.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/led_strip/CMakeFiles/edit_cache.dir
+C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/led_strip/CMakeFiles/rebuild_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/pinctrl/CMakeFiles/drivers__pinctrl.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/pinctrl/CMakeFiles/edit_cache.dir
 C:/ncs/v2.9.1/nrf/samples/Vitals_monitoring_system/build/Vitals_monitoring_system/zephyr/drivers/pinctrl/CMakeFiles/rebuild_cache.dir

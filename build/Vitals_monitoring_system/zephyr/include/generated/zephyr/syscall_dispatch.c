@@ -23,10 +23,6 @@ uintptr_t z_mrsh_zephyr_fwrite(uintptr_t arg1, uintptr_t arg2, uintptr_t arg3,
          uintptr_t arg4, uintptr_t arg5, uintptr_t arg6, void *ssf);
 
 __weak ALIAS_OF(handler_no_syscall)
-uintptr_t z_mrsh___posix_clock_get_base(uintptr_t arg1, uintptr_t arg2, uintptr_t arg3,
-         uintptr_t arg4, uintptr_t arg5, uintptr_t arg6, void *ssf);
-
-__weak ALIAS_OF(handler_no_syscall)
 uintptr_t z_mrsh_z_sys_mutex_kernel_lock(uintptr_t arg1, uintptr_t arg2, uintptr_t arg3,
          uintptr_t arg4, uintptr_t arg5, uintptr_t arg6, void *ssf);
 
@@ -818,7 +814,6 @@ const _k_syscall_handler_t _k_syscall_table[K_SYSCALL_LIMIT] = {
 	[K_SYSCALL_ZEPHYR_WRITE_STDOUT] = z_mrsh_zephyr_write_stdout,
 	[K_SYSCALL_ZEPHYR_FPUTC] = z_mrsh_zephyr_fputc,
 	[K_SYSCALL_ZEPHYR_FWRITE] = z_mrsh_zephyr_fwrite,
-	[K_SYSCALL___POSIX_CLOCK_GET_BASE] = z_mrsh___posix_clock_get_base,
 	[K_SYSCALL_Z_SYS_MUTEX_KERNEL_LOCK] = z_mrsh_z_sys_mutex_kernel_lock,
 	[K_SYSCALL_Z_SYS_MUTEX_KERNEL_UNLOCK] = z_mrsh_z_sys_mutex_kernel_unlock,
 	[K_SYSCALL_Z_LOG_MSG_SIMPLE_CREATE_0] = z_mrsh_z_log_msg_simple_create_0,

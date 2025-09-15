@@ -19,11 +19,15 @@
 #include "ble.h"
 #include "temp.h"
 #include "lis3dh.h"
+#include "ws2812.h"
+#include "button.h"
+#include "gpio.h"
 
 #define I2C_NODE DT_NODELABEL(i2c0)
+#define GPIO_PIN 16
 
 #define BATCH_SIZE 25
-#define MSGQ_SIZE 100
+#define MSGQ_SIZE 110
 #define BT_ATT_MTU_DEFAULT 23
 #define FORMAT_BATCH_SIZE 6
 #define MAX_LINE_BUF 256
@@ -145,11 +149,64 @@ extern const struct bt_gatt_attr *accel_char_attr;
 
 static lis3dh_sensor_t lis3dh_dev;
 
+extern struct k_work ble_disconnect_work;
+extern void ble_disconnect_work_handler(struct k_work *work);
+
 /* Synchronization for end-of-collection and completion */
 static K_SEM_DEFINE(collection_sem, 0, 1); /* given by sensor when final temp enqueued */
 static K_SEM_DEFINE(done_sem, 0, 1);       /* given by printer when finished */
+static K_SEM_DEFINE(ble_done_sem, 0, 1);       /* given by BLE Thread when finished */
 
 static volatile bool collection_done = false;
+
+
+// Custom timegm() replacement (UTC time -> timestamp)
+time_t custom_timegm(struct tm *tm) {
+    static const int days_in_month[] = {
+        31, 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
+    };
+
+    int year = tm->tm_year + 1900;
+    int month = tm->tm_mon;  // 0-11
+    int day = tm->tm_mday;
+
+    // Count leap years
+    int y = year - (month < 2);
+    int leap_days = y / 4 - y / 100 + y / 400;
+
+    // Days since epoch
+    int days = (year - 1970) * 365 + leap_days;
+    for (int i = 0; i < month; i++) {
+        days += days_in_month[i];
+    }
+
+    // Add one more day for leap year if after Feb
+    if (month > 1 && ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))) {
+        days += 1;
+    }
+
+    days += day - 1;
+
+    // Return seconds since epoch
+    return days * 86400 + tm->tm_hour * 3600 + tm->tm_min * 60 + tm->tm_sec;
+}
+
+uint64_t parse_timestamp_ms(const char *timestamp_str) {
+    struct tm t = {0};
+    int ms = 0;
+
+    // Parse: "dd/mm/yyyy hh:mm:ss.mmm"
+    sscanf(timestamp_str, "%d/%d/%d %d:%d:%d.%d",
+           &t.tm_mday, &t.tm_mon, &t.tm_year,
+           &t.tm_hour, &t.tm_min, &t.tm_sec, &ms);
+
+    t.tm_mon -= 1;
+    t.tm_year -= 1900;
+
+    time_t seconds = custom_timegm(&t);
+    return ((uint64_t)seconds * 1000) + ms;
+}
 
 /* local helper: safe msgq count get (atomic-ish) */
 static inline size_t msgq_used_count_kmsgq(struct k_msgq *q)
@@ -161,6 +218,7 @@ static inline size_t msgq_used_count_kmsgq(struct k_msgq *q)
 void sensor_thread(void *p1, void *p2, void *p3)
 {
     const struct device *i2c_dev = DEVICE_DT_GET(I2C_NODE);
+    static uint16_t a_cnt=0, p_cnt=0;
 
     printk("[THREAD] sensor_thread started\n");
 
@@ -197,14 +255,20 @@ void sensor_thread(void *p1, void *p2, void *p3)
         printk("[TEMP] Temperature sensor initialization failed\n");
     }
 
-    rtc2_init();
+    //rtc2_init();
 
     PPGSample ppg_sample;
     lis3dh_data_t accel_sample;
     TempSample temp_sample;
 
-    uint32_t p_cnt = 0;
-    uint32_t a_cnt = 0;
+    /* Wait here until notify is enabled */
+    while (!ack_notify_enabled) {
+        k_msleep(50);   // Sleep a bit to avoid busy loop
+    }
+
+    /* Once enabled, send the ack */
+    send_ack_to_mobile("2#0");
+
 
     /* Run until we collect MAX_SAMPLES for both PPG and ACCEL */
     while (1) {
@@ -218,6 +282,7 @@ void sensor_thread(void *p1, void *p2, void *p3)
             if (k_mutex_lock(&i2c_bus_mutex, I2C_MUTEX_TIMEOUT) == 0) {
                 if (adpd144ri_read_2ch(i2c_dev, ppg_sample.channels) == 0) {
                     ppg_sample.timestamp_ms = get_timestamp_ms();
+                    ppg_sample.ppg_sample_id = p_cnt;
                     /* If msgq full, drop oldest to keep moving (avoid blocking sensor) */
                     if (k_msgq_put(&ppg_msgq, &ppg_sample, K_NO_WAIT) != 0) {
                         /* try removing one and push */
@@ -236,6 +301,7 @@ void sensor_thread(void *p1, void *p2, void *p3)
             if (k_mutex_lock(&i2c_bus_mutex, I2C_MUTEX_TIMEOUT) == 0) {
                 if (lis3dh_read_data(&lis3dh_dev, accel_sample.data)) {
                     accel_sample.timestamp_ms = get_timestamp_ms();
+                    accel_sample.accel_sample_id = a_cnt;
                     if (k_msgq_put(&accel_msgq, &accel_sample, K_NO_WAIT) != 0) {
                         lis3dh_data_t tmp;
                         k_msgq_get(&accel_msgq, &tmp, K_NO_WAIT);
@@ -400,12 +466,38 @@ void printer_thread(void *p1, void *p2, void *p3)
 }
 
 
+// Thread function for LED/Button/GPIO init
+void init_thread(void *p1, void *p2, void *p3)
+{
+    printk("[INIT] Initialization thread started\n");
+
+    // GPIO high
+    gpio_high();
+
+    // WS2812 init
+    ws2812_init();
+    k_msleep(15);
+    ws2812_set_color(&GREEN);
+
+    // Button init
+    if (button_init() != 0) {
+        printk("[INIT] Button init failed\n");
+    }
+
+    printk("[INIT] LED, Button, GPIO init done\n");
+
+    // Thread can now terminate
+}
+
 
 /* Thread stacks and data */
-K_THREAD_STACK_DEFINE(sensor_stack, 2048);
-K_THREAD_STACK_DEFINE(printer_stack, 2048);
+K_THREAD_STACK_DEFINE(sensor_stack, 2536);
+K_THREAD_STACK_DEFINE(printer_stack, 2536);
+K_THREAD_STACK_DEFINE(init_stack, 1024);
+
 static struct k_thread sensor_thread_data;
 static struct k_thread printer_thread_data;
+static struct k_thread init_thread_data;
 
 /* extern helper functions assumed provided in other modules */
 extern void format_timestamp(uint64_t ts_ms, char *buf, size_t buf_len);
@@ -467,15 +559,17 @@ static int stream_file_over_ble(const char *path,
                 }
                 int count = bytes_read / sizeof(PPGSample);
                 int pos = 0;
-                pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos, "PPG_BATCH:");
+                pos += snprintk(line_buf + pos, MAX_LINE_BUF - pos, "PPG_BATCH:%d",patient_id);
                 for (int i = 0; i < count; i++) {
-                    pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos,
-                                    "#%llu,%lx,%lx",
+                    pos += snprintk(line_buf + pos, MAX_LINE_BUF - pos,
+                                    "#%hu,%llu,%lx,%lx",
+                                    samples[i].ppg_sample_id,
                                     (unsigned long long)samples[i].timestamp_ms,
                                     (unsigned long)samples[i].channels[0],
                                     (unsigned long)samples[i].channels[1]);
                 }
                 line_buf[pos] = '\0';
+                printk("%s\n",line_buf);
                 size_t line_len = strlen(line_buf);
 
                 offset = 0;
@@ -511,16 +605,18 @@ static int stream_file_over_ble(const char *path,
                 }
                 int count = bytes_read / sizeof(lis3dh_data_t);
                 int pos = 0;
-                pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos, "ACCEL_BATCH:");
+                pos += snprintk(line_buf + pos, MAX_LINE_BUF - pos, "ACCEL_BATCH:%d",patient_id);
                 for (int i = 0; i < count; i++) {
-                    pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos,
-                                    "#%llu,%d,%d,%d",
+                    pos += snprintk(line_buf + pos, MAX_LINE_BUF - pos,
+                                    "#%hu,%llu,%d,%d,%d",
+                                    samples[i].accel_sample_id,
                                     (unsigned long long)samples[i].timestamp_ms,
                                     samples[i].data[0],
                                     samples[i].data[1],
                                     samples[i].data[2]);
                 }
                 line_buf[pos] = '\0';
+                printk("%s\n",line_buf);
                 size_t line_len = strlen(line_buf);
 
                 offset = 0;
@@ -557,13 +653,14 @@ static int stream_file_over_ble(const char *path,
                 break; // EOF
             }
             int pos = 0;
-            pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos, "TEMP_BATCH:");
-            pos += snprintf(line_buf + pos, MAX_LINE_BUF - pos,
+            pos += snprintk(line_buf + pos, MAX_LINE_BUF - pos, "TEMP_BATCH:%d",patient_id);
+            pos += snprintk(line_buf + pos, MAX_LINE_BUF - pos,
                             "#%llu,%d,%d",
                             (unsigned long long)temp.timestamp_ms,
                             temp.temperature_c,
                             (int)temp.battery_pct);
             line_buf[pos] = '\0';
+            printk("%s\n",line_buf);
             size_t line_len = strlen(line_buf);
 
             offset = 0;
@@ -612,7 +709,11 @@ void ble_tx_thread(void *p1, void *p2, void *p3)
     rc = stream_file_over_ble(LFS_MOUNT_POINT "/temp_raw.dat", temp_char_attr, &notify_enabled_temp);
     if (rc) printk("[BLE_TX] notify failed /lfs/temp_raw.dat rc=%d\n", rc);
 
-    printk("[BLE_TX] All files streamed. Exiting thread.\n");
+    send_ack_to_mobile("1#0");
+    k_sem_give(&ble_done_sem);
+    printk("[BLE_TX] All files streamed. Exiting Thread\n");
+
+    return;
 }
 
 
@@ -665,8 +766,16 @@ int main(void)
         printk("[BLE] Bluetooth init failed (err %d)\n", err);
     }
 
+    k_work_init(&ble_disconnect_work, ble_disconnect_work_handler);
+
     //for(;;){
         /* Start threads */
+    k_thread_create(&init_thread_data, init_stack,
+                    K_THREAD_STACK_SIZEOF(init_stack),
+                    (k_thread_entry_t)init_thread,
+                    NULL, NULL, NULL,
+                    5, 0, K_NO_WAIT);
+
     k_thread_create(&sensor_thread_data, sensor_stack,
                     K_THREAD_STACK_SIZEOF(sensor_stack),
                     (k_thread_entry_t)sensor_thread,
@@ -696,8 +805,23 @@ int main(void)
         //k_msleep(50000);
 
     //}
-    
+    k_sem_take(&ble_done_sem, K_FOREVER);
 
     printk("[MAIN] All done. Main returning.\n");
+
+    
+
+    rtc2_set_alarm(50000); // 50s
+
+    /* Safe non-blocking wait: check alarm flag periodically,
+        use SEV/WFE to avoid missed wakeups. */
+    while (!rtc2_alarm_triggered()) {
+        __SEV();  /* ensure there is a pending event to wake WFE */
+        __WFE();
+        /* still loop checking alarm flag; this keeps other threads runnable */
+    }
+    printk("[MAIN] Woke up, starting new cycle.\n");
+    //send_ack_to_mobile("2#0");
+
     return 0;
 }

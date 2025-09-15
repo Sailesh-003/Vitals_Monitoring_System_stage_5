@@ -3,8 +3,13 @@
 
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/kernel.h>
+#include <stdbool.h>
+#include <zephyr/bluetooth/bluetooth.h>
 
-#define SENSOR_NOTIFY_BUF_SIZE 2048
+#define SENSOR_NOTIFY_BUF_SIZE 512
+#define BLE_TIMEOUT_MS 180000  // 3 minutes
+
+static struct k_timer ble_disconnect_timer;
 
 // Notification buffers for each sensor
 extern char sensor_notify_buf_ppg[SENSOR_NOTIFY_BUF_SIZE];
@@ -28,6 +33,7 @@ extern struct bt_conn *current_conn;
 extern volatile bool notify_enabled_ppg;
 extern volatile bool notify_enabled_temp;
 extern volatile bool notify_enabled_accel;
+extern volatile bool ack_notify_enabled;
 
 // Mutex protecting notification buffers
 extern struct k_mutex notify_buf_mutex;
@@ -37,4 +43,10 @@ void bt_ready(int err);
 void connected(struct bt_conn *conn, uint8_t err);
 void disconnected(struct bt_conn *conn, uint8_t reason);
 
+
+extern uint8_t ack_value[10];
+extern uint16_t patient_id;
+extern uint32_t timestamp_s;
+
+void send_ack_to_mobile(const char *ack_msg);
 #endif 

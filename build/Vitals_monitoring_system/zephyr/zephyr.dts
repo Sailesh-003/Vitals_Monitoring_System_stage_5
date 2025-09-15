@@ -33,6 +33,7 @@
 		mcuboot-button0 = &button0;
 		mcuboot-led0 = &led0;
 		watchdog0 = &wdt0;
+		led-strip = &led_strip;
 	};
 	soc {
 		#address-cells = < 0x1 >;
@@ -463,7 +464,7 @@
 			#pwm-cells = < 0x3 >;
 		};
 		spi2: arduino_spi: spi@40023000 {
-			compatible = "nordic,nrf-spi";
+			compatible = "nordic,nrf-spim";
 			#address-cells = < 0x1 >;
 			#size-cells = < 0x0 >;
 			reg = < 0x40023000 0x1000 >;
@@ -475,6 +476,15 @@
 			pinctrl-0 = < &spi2_default >;
 			pinctrl-1 = < &spi2_sleep >;
 			pinctrl-names = "default", "sleep";
+			led_strip: ws2812@0 {
+				compatible = "worldsemi,ws2812-spi";
+				reg = < 0x0 >;
+				spi-max-frequency = < 0x249f00 >;
+				chain-length = < 0x1 >;
+				color-mapping = < 0x2 0x1 0x3 >;
+				spi-one-frame = < 0x60 >;
+				spi-zero-frame = < 0x40 >;
+			};
 		};
 		rtc2: rtc@40024000 {
 			compatible = "nordic,nrf-rtc";

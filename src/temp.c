@@ -170,8 +170,10 @@ static void get_temp(void) {
 int read_battery_mv(void) {
     if (adc_read_channel(ADC_CHANNEL_BATT, &adc_sample_batt) != 0)
         return -1;
+
+    printk("[BATTERY] Raw ADC value = %d\n", adc_sample_batt);
     int32_t mv = adc_sample_batt;
-    mv = mv * ADC_REF_VOLTAGE_BATT * 6 / ADC_MAX_VALUE;
+    mv = 2*(mv * ADC_REF_VOLTAGE_BATT * 6 / ADC_MAX_VALUE);
     return mv;
 }
 

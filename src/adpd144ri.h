@@ -6,6 +6,7 @@
 #define PPG_NUM_CHANNELS 2                 // Number of sensor data channels to read
 
 typedef struct {
+    uint16_t ppg_sample_id;
     uint64_t timestamp_ms;                // Timestamp when sample was taken
     uint32_t channels[PPG_NUM_CHANNELS]; // Array to hold red and IR LED values
 } PPGSample;

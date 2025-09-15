@@ -33,14 +33,6 @@
     ],
     [
         [
-            "int __posix_clock_get_base",
-            "clockid_t clock_id, struct timespec *ts"
-        ],
-        "posix_clock.h",
-        true
-    ],
-    [
-        [
             "int z_sys_mutex_kernel_lock",
             "struct sys_mutex *mutex,\n\t\t\t\t      k_timeout_t timeout"
         ],
