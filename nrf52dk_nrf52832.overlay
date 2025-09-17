@@ -32,28 +32,53 @@
     status = "okay";
 };
 
-/* --- SAADC --- */
-&adc {
-    status = "okay";
+// /* --- SAADC --- */
+// &adc {
+//     status = "okay";
 
-    /* Channel 1: Temperature on AIN2 */
-    channel@1 {
-        reg = <1 0 1>;
-        zephyr,gain = "ADC_GAIN_1_4";
-        zephyr,reference = "ADC_REF_VDD_1_4";
-        zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-        zephyr,input-positive = <2>;
-    };
+//     /* Channel 1: Temperature on AIN2 (P0.04) */
+//     channel@1 {
+//         reg = <1 0 1>;
+//         zephyr,gain = "ADC_GAIN_1_4";
+//         zephyr,reference = "ADC_REF_VDD_1_4";
+//         zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+//         zephyr,input-positive = <2>;   /* AIN2 = P0.04 */
+//     };
 
-    /* Channel 6: Battery on AIN6 */
-    channel@6 {
-        reg = <6 0 1>;
-        zephyr,gain = "ADC_GAIN_1_6";
-        zephyr,reference = "ADC_REF_INTERNAL";
-        zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-        zephyr,input-positive = <6>;
-    };
-};
+//     /* Channel 6: Battery on AIN6 (P0.30) */
+//     channel@6 {
+//         reg = <6 0 1>;
+//         zephyr,gain = "ADC_GAIN_1_6";
+//         zephyr,reference = "ADC_REF_INTERNAL";
+//         zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+//         zephyr,input-positive = <6>;   /* AIN6 = P0.30 */
+//     };
+// };
+
+
+// /* --- SAADC --- */
+// &adc {
+//     status = "okay";
+
+//     /* Channel 1: Temperature on AIN2 */
+//     channel@1 {
+//         reg = <1 0 1>;
+//         zephyr,gain = "ADC_GAIN_1_4";
+//         zephyr,reference = "ADC_REF_VDD_1_4";
+//         zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+//         zephyr,input-positive = <2>;
+//     };
+
+//     /* Channel 3: Battery on AIN3 */
+//     channel@0 {
+//         reg = <0 0 1>;
+//         zephyr,gain = "ADC_GAIN_1_6";
+//         zephyr,reference = "ADC_REF_INTERNAL";
+//         zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+//         zephyr,input-positive = <1>;
+//     };
+// };
+
 
 
 #include <zephyr/dt-bindings/led/led.h>

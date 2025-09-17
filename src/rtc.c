@@ -41,15 +41,15 @@ void rtc2_init(uint32_t unix_time) {
     NRF_RTC2->TASKS_CLEAR = 1;
     NRF_RTC2->TASKS_START = 1;
 
-    // // Enable COMPARE0 event & interrupt
-    // NRF_RTC2->EVTENSET = RTC_EVTENSET_COMPARE0_Msk;
-    // NRF_RTC2->INTENSET = RTC_INTENSET_COMPARE0_Msk;
+    // Enable COMPARE0 event & interrupt
+    NRF_RTC2->EVTENSET = RTC_EVTENSET_COMPARE0_Msk;
+    NRF_RTC2->INTENSET = RTC_INTENSET_COMPARE0_Msk;
 
-    // /* Register the interrupt with Zephyr */
-    // IRQ_DIRECT_CONNECT(RTC2_IRQn, 3, RTC2_IRQHandler, 0);
+    /* Register the interrupt with Zephyr */
+    IRQ_DIRECT_CONNECT(RTC2_IRQn, 3, RTC2_IRQHandler, 0);
 
-    // /* Enable the interrupt in NVIC */
-    // irq_enable(RTC2_IRQn);
+    /* Enable the interrupt in NVIC */
+    irq_enable(RTC2_IRQn);
 
     
 
