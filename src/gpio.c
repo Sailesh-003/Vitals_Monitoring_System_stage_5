@@ -5,7 +5,9 @@
 
 #include "gpio.h"
 
-const struct device *gpio0_dev = DEVICE_DT_GET(DT_NODELABEL(gpio0));
+#define GPIO0_NODE DT_NODELABEL(gpio0)
+
+const struct device *gpio0_dev = DEVICE_DT_GET(GPIO0_NODE);
 static struct gpio_callback charging_cb_data;
 
 void gpio_high(void)

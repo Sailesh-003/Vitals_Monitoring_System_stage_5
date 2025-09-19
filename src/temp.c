@@ -297,7 +297,7 @@ LOG_MODULE_REGISTER(temp_sensor, LOG_LEVEL_INF);
 #define DIVIDER_RATIO          2                   /* 220k/220k divider */
 
 /* Static state variables */
-static const struct device *adc_dev;
+
 static int16_t adc_sample_temp;
 static int16_t adc_sample_batt;
 
@@ -446,9 +446,11 @@ uint8_t battery_percent(int mv) {
     return (uint8_t)(((mv - empty) * 95) / (full - empty) + 5);
 }
 
+const struct device *adc_dev = DEVICE_DT_GET(ADC_NODE);
+
 /* Init ADC */
 int temp_sensor_init(void) {
-    adc_dev = DEVICE_DT_GET(ADC_NODE);
+    
     if (!device_is_ready(adc_dev)) {
         printk("[TEMP] ADC device not ready!\n");
         return -ENODEV;

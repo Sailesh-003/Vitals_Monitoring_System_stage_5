@@ -11,7 +11,7 @@ typedef struct {
     uint64_t timestamp_ms;    // Measurement timestamp in milliseconds
 } TempSample;
 
-
+extern const struct device *adc_dev;
 int temp_sensor_init(void);
 
 int temp_sensor_read(TempSample *sample);

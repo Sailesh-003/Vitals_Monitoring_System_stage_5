@@ -14,6 +14,7 @@
 #include <zephyr/storage/flash_map.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/pm/device.h>
 #include "adpd144ri.h"
 #include "rtc.h"
 #include "ble.h"
@@ -22,6 +23,8 @@
 #include "ws2812.h"
 #include "button.h"
 #include "gpio.h"
+
+#include <nrfx_saadc.h>
 
 #define I2C_NODE DT_NODELABEL(i2c0)
 #define GPIO_PIN 16
@@ -33,7 +36,7 @@
 #define BT_ATT_MTU_DEFAULT 23
 #define FORMAT_BATCH_SIZE 6
 #define MAX_LINE_BUF 256
-
+#define WAKEUP_INTERVAL_MS 60000
 
 #define MAX_SAMPLES 12000
 
@@ -216,11 +219,12 @@ static inline size_t msgq_used_count_kmsgq(struct k_msgq *q)
     return k_msgq_num_used_get(q);
 }
 
+const struct device *i2c_dev = DEVICE_DT_GET(I2C_NODE);
+
 /* --- sensor thread: collects PPG and ACCEL up to MAX_SAMPLES each, then reads TEMP once --- */
 void sensor_thread(void *p1, void *p2, void *p3)
 {
-    const struct device *i2c_dev = DEVICE_DT_GET(I2C_NODE);
-    static uint16_t a_cnt=0, p_cnt=0;
+    uint16_t a_cnt=0, p_cnt=0;
 
     printk("[THREAD] sensor_thread started\n");
 
@@ -468,64 +472,6 @@ void printer_thread(void *p1, void *p2, void *p3)
 }
 
 
-// Interrupt handler for charging pin
-// void charging_connected_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-// {
-//     printk("[CHARGING] Interrupt triggered! Charger connected.\n");
-
-//     // Give time for the message to print before shutdown
-//     k_msleep(100);
-
-//     printk("[CHARGING] Shutting down the device...\n");
-//     nrf_power_system_off(NRF_POWER);
-// }
-
-// void charging_connected_callback(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
-// {
-//     printk("[CHARGING] Interrupt triggered! Charger connected.\n");
-
-//     // Set GPIO 16 low to cut power before shutdown
-//     gpio_pin_set(gpio_dev, GPIO_PIN, 0);
-//     printk("[CHARGING] GPIO_PIN %d set to LOW (cutting power)\n", GPIO_PIN);
-
-//     // Give time for message to print
-//     k_msleep(100);
-
-//     printk("[CHARGING] Shutting down the device...\n");
-//     nrf_power_system_off(NRF_POWER);
-// }
-
-
-
-
-// Thread function for LED/Button/GPIO init
-void init_thread(void *p1, void *p2, void *p3)
-{
-    printk("[INIT] Initialization thread started\n");
-
-    // GPIO high
-    gpio_high();
-
-    // WS2812 init
-    ws2812_init();
-    k_msleep(15);
-    ws2812_set_color(&GREEN);
-
-    // Button init
-    if (button_init() != 0) {
-        printk("[INIT] Button init failed\n");
-    }
-
-    // Setup charging interrupt here
-    setup_charging_interrupt();
-
-    printk("[INIT] LED, Button, GPIO init done\n");
-
-    // Thread can now terminate
-}
-
-
-
 /* Thread stacks and data */
 K_THREAD_STACK_DEFINE(sensor_stack, 2536);
 K_THREAD_STACK_DEFINE(printer_stack, 2536);
@@ -533,7 +479,7 @@ K_THREAD_STACK_DEFINE(init_stack, 1024);
 
 static struct k_thread sensor_thread_data;
 static struct k_thread printer_thread_data;
-static struct k_thread init_thread_data;
+//static struct k_thread init_thread_data;
 
 /* extern helper functions assumed provided in other modules */
 extern void format_timestamp(uint64_t ts_ms, char *buf, size_t buf_len);
@@ -541,20 +487,6 @@ extern uint64_t get_timestamp_ms(void);
 
 K_THREAD_STACK_DEFINE(ble_tx_stack, 1536);
 static struct k_thread ble_tx_thread_data;
-
-
-static int notify_chunk(const struct bt_gatt_attr *attr,
-                        const uint8_t *buf, size_t len)
-{
-    if (!current_conn || !attr) {
-        return -ENOTCONN;
-    }
-
-    /* Use the simple notify API */
-    int rc = bt_gatt_notify(current_conn, attr, (void *)buf, len);
-    return rc;
-}
-
 
 
 static int stream_file_over_ble(const char *path,
@@ -770,14 +702,14 @@ int main(void)
         return -ENODEV;
     }
 
-    /* Erase entire external flash (2MB) before formatting/mounting */
-    LOG_INF("Erasing entire external flash...");
-    int rc = flash_erase(flash_dev, 0, 512 * 4096);
-    if (rc < 0) {
-        LOG_ERR("Flash erase failed [%d]", rc);
-        return rc;
-    }
-    LOG_INF("Erase completed.");
+    // /* Erase entire external flash (2MB) before formatting/mounting */
+    // LOG_INF("Erasing entire external flash...");
+    // int rc = flash_erase(flash_dev, 0, 512 * 4096);
+    // if (rc < 0) {
+    //     LOG_ERR("Flash erase failed [%d]", rc);
+    //     return rc;
+    // }
+    // LOG_INF("Erase completed.");
 
     /* --- Inject runtime lfs config & buffers into Zephyr fs_littlefs struct --- */
     littlefs_data.cfg = littlefs_cfg;
@@ -786,7 +718,7 @@ int main(void)
     memcpy(littlefs_data.lookahead_buffer, lookahead_buffer, sizeof(lookahead_buffer));
 
     /* Now mount using Zephyr API (fs_mount) — wrapper will use our cfg */
-    rc = fs_mount(&littlefs_mnt);
+    int rc = fs_mount(&littlefs_mnt);
     if (rc < 0) {
         LOG_ERR("Failed to mount LittleFS [%d]", rc);
         return rc;
@@ -805,238 +737,81 @@ int main(void)
     k_work_init(&ble_disconnect_work, ble_disconnect_work_handler);
 
     
-    /* Start threads */
-    k_thread_create(&init_thread_data, init_stack,
-                    K_THREAD_STACK_SIZEOF(init_stack),
-                    (k_thread_entry_t)init_thread,
-                    NULL, NULL, NULL,
-                    5, 0, K_NO_WAIT);
+    // GPIO high
+    gpio_high();
 
-    k_thread_create(&sensor_thread_data, sensor_stack,
+    // WS2812 init
+    ws2812_init();
+    k_msleep(15);
+    ws2812_set_color(&GREEN);
+
+    // Button init
+    if (button_init() != 0) {
+        printk("[INIT] Button init failed\n");
+    }
+
+    // Setup charging interrupt here
+    setup_charging_interrupt();
+
+    printk("[INIT] LED, Button, GPIO init done\n");
+
+    while(1){
+        k_thread_create(&sensor_thread_data, sensor_stack,
                     K_THREAD_STACK_SIZEOF(sensor_stack),
                     (k_thread_entry_t)sensor_thread,
                     NULL, NULL, NULL,
                     5, 0, K_NO_WAIT);
-
-    k_thread_create(&printer_thread_data, printer_stack,
+                    
+        k_thread_create(&printer_thread_data, printer_stack,
                     K_THREAD_STACK_SIZEOF(printer_stack),
                     (k_thread_entry_t)printer_thread,
                     NULL, NULL, NULL,
                     5, 0, K_NO_WAIT);
 
-    /* Wait for printer to signal completion (writing finished) */
-    k_sem_take(&done_sem, K_FOREVER);
+        /* Wait for printer to signal completion (writing finished) */
+        k_sem_take(&done_sem, K_FOREVER);
 
-    /* Print storage info after completion */
-    LOG_INF("Final storage snapshot after collection & writes:");
-    check_storage_usage();
+        /* Print storage info after completion */
+        LOG_INF("Final storage snapshot after collection & writes:");
+        check_storage_usage();
 
-    /* Start BLE transmit thread AFTER printer completes */
-    k_thread_create(&ble_tx_thread_data, ble_tx_stack,
+        /* Start BLE transmit thread AFTER printer completes */
+        k_thread_create(&ble_tx_thread_data, ble_tx_stack,
                     K_THREAD_STACK_SIZEOF(ble_tx_stack),
                     (k_thread_entry_t)ble_tx_thread,
                     NULL, NULL, NULL,
                     5, 0, K_NO_WAIT);
 
                     
-    k_sem_take(&ble_done_sem, K_FOREVER);
+        k_sem_take(&ble_done_sem, K_FOREVER);
 
-    printk("[MAIN] All done. Main returning.\n");
+        int ret = 0;
+      
+        ret = pm_device_action_run(i2c_dev, PM_DEVICE_ACTION_SUSPEND);
+        printk("i2c suspend ret = %d\n", ret);
+        ret = pm_device_action_run(flash_dev, PM_DEVICE_ACTION_SUSPEND);
+        printk("flash suspend ret = %d\n", ret);
+
+        rtc2_set_alarm(WAKEUP_INTERVAL_MS);
+        printk("Going into sleep\n");
+
+        while (!rtc2_alarm_triggered()) {
+            __SEV();
+            __WFE();
+            __WFE();
+        }
+
+        ret = pm_device_action_run(i2c_dev, PM_DEVICE_ACTION_RESUME);
+        printk("i2c resumed ret = %d\n", ret);
+        ret = pm_device_action_run(flash_dev, PM_DEVICE_ACTION_RESUME);
+        printk("flash resumed ret = %d\n", ret);
+    
+
+        k_msleep(100);
+
+    }
 
     return 0;
 
-
-
-    // while (1) {
-    //     // Reset all flags and states
-    //     collection_done = false;
-    //     notify_enabled_ppg = false;
-    //     notify_enabled_accel = false;
-    //     notify_enabled_temp = false;
-    //     ack_notify_enabled = false;
-
-    //     // Reset msgqs
-    //     k_msgq_purge(&ppg_msgq);
-    //     k_msgq_purge(&accel_msgq);
-    //     k_msgq_purge(&temp_msgq);
-
-    //     // Reset semaphores
-    //     k_sem_reset(&collection_sem);
-    //     k_sem_reset(&done_sem);
-    //     k_sem_reset(&ble_done_sem);
-
-    //     // Start threads
-    //     k_thread_create(&init_thread_data, init_stack,
-    //                     K_THREAD_STACK_SIZEOF(init_stack),
-    //                     (k_thread_entry_t)init_thread,
-    //                     NULL, NULL, NULL,
-    //                     5, 0, K_NO_WAIT);
-
-    //     k_thread_create(&sensor_thread_data, sensor_stack,
-    //                     K_THREAD_STACK_SIZEOF(sensor_stack),
-    //                     (k_thread_entry_t)sensor_thread,
-    //                     NULL, NULL, NULL,
-    //                     5, 0, K_NO_WAIT);
-
-    //     k_thread_create(&printer_thread_data, printer_stack,
-    //                     K_THREAD_STACK_SIZEOF(printer_stack),
-    //                     (k_thread_entry_t)printer_thread,
-    //                     NULL, NULL, NULL,
-    //                     5, 0, K_NO_WAIT);
-
-    //     // Wait for printer to finish writing data
-    //     k_sem_take(&done_sem, K_FOREVER);
-
-    //     check_storage_usage();
-
-    //     // Start BLE transmit thread
-    //     k_thread_create(&ble_tx_thread_data, ble_tx_stack,
-    //                     K_THREAD_STACK_SIZEOF(ble_tx_stack),
-    //                     (k_thread_entry_t)ble_tx_thread,
-    //                     NULL, NULL, NULL,
-    //                     5, 0, K_NO_WAIT);
-
-    //     // Wait for BLE transmit to complete
-    //     k_sem_take(&ble_done_sem, K_FOREVER);
-
-    //     printk("[MAIN] BLE transmit complete, going to sleep...\n");
-
-    //     // Set alarm for sleep duration (e.g., 50 seconds)
-    //     rtc2_set_alarm(50000);
-
-    //     // Sleep until alarm triggers
-    //     while (!rtc2_alarm_triggered()) {
-    //         __SEV();
-    //         __WFE();
-    //     }
-
-    //     printk("[MAIN] Woke up, restarting cycle...\n");
-    // }
-
-    // return 0;
 }
 
-
-
-
-// void main(void)
-// {
-//     printk("\n********* BOOTING ADPD144RI BLE SENSOR DEMO *********\n");
-
-//     /* Initialization of mutexes, buffers, devices, etc. */
-//     k_mutex_init(&notify_buf_mutex);
-//     memset(sensor_notify_buf_ppg, 0, sizeof(sensor_notify_buf_ppg));
-//     memset(sensor_notify_buf_temp, 0, sizeof(sensor_notify_buf_temp));
-//     memset(sensor_notify_buf_accel, 0, sizeof(sensor_notify_buf_accel));
-
-//     flash_dev = device_get_binding("w25q16");
-//     if (!flash_dev) {
-//         LOG_ERR("Failed to bind flash device");
-//         return;
-//     }
-//     LOG_INF("Flash device bound");
-
-//     /* Erase and mount filesystem */
-//     int rc = flash_erase(flash_dev, 0, 512 * 4096);
-//     if (rc < 0) {
-//         LOG_ERR("Flash erase failed [%d]", rc);
-//         return;
-//     }
-//     LOG_INF("Flash erase completed");
-
-//     littlefs_data.cfg = littlefs_cfg;
-//     littlefs_data.read_buffer = read_buffer;
-//     littlefs_data.prog_buffer = prog_buffer;
-//     memcpy(littlefs_data.lookahead_buffer, lookahead_buffer, sizeof(lookahead_buffer));
-
-//     rc = fs_mount(&littlefs_mnt);
-//     if (rc < 0) {
-//         LOG_ERR("Failed to mount LittleFS [%d]", rc);
-//         return;
-//     }
-//     LOG_INF("Filesystem mounted");
-
-//     check_storage_usage();
-
-//     /* Bluetooth initialization */
-//     rc = bt_enable(bt_ready);
-//     printk("[MAIN] Called bt_enable(), returned %d\n", rc);
-//     if (rc) {
-//         printk("[BLE] Bluetooth init failed (err %d)\n", rc);
-//     }
-//     k_work_init(&ble_disconnect_work, ble_disconnect_work_handler);
-
-//     /* RTC initialization */
-//     //rtc2_init();
-
-//     while (1) {
-//         printk("[MAIN] Starting new data collection cycle\n");
-
-//         /* Reset all flags and states */
-//         collection_done = false;
-//         notify_enabled_ppg = false;
-//         notify_enabled_accel = false;
-//         notify_enabled_temp = false;
-//         ack_notify_enabled = false;
-
-//         /* Purge message queues */
-//         k_msgq_purge(&ppg_msgq);
-//         k_msgq_purge(&accel_msgq);
-//         k_msgq_purge(&temp_msgq);
-
-//         /* Reset semaphores */
-//         k_sem_reset(&collection_sem);
-//         k_sem_reset(&done_sem);
-//         k_sem_reset(&ble_done_sem);
-
-//         /* Start sensor threads */
-//         k_thread_create(&init_thread_data, init_stack,
-//                         K_THREAD_STACK_SIZEOF(init_stack),
-//                         (k_thread_entry_t)init_thread,
-//                         NULL, NULL, NULL,
-//                         5, 0, K_NO_WAIT);
-
-//         k_thread_create(&sensor_thread_data, sensor_stack,
-//                         K_THREAD_STACK_SIZEOF(sensor_stack),
-//                         (k_thread_entry_t)sensor_thread,
-//                         NULL, NULL, NULL,
-//                         5, 0, K_NO_WAIT);
-
-//         k_thread_create(&printer_thread_data, printer_stack,
-//                         K_THREAD_STACK_SIZEOF(printer_stack),
-//                         (k_thread_entry_t)printer_thread,
-//                         NULL, NULL, NULL,
-//                         5, 0, K_NO_WAIT);
-
-//         /* Wait for printer to finish writing data */
-//         k_sem_take(&done_sem, K_FOREVER);
-
-//         check_storage_usage();
-
-//         /* Start BLE transmit thread */
-//         k_thread_create(&ble_tx_thread_data, ble_tx_stack,
-//                         K_THREAD_STACK_SIZEOF(ble_tx_stack),
-//                         (k_thread_entry_t)ble_tx_thread,
-//                         NULL, NULL, NULL,
-//                         5, 0, K_NO_WAIT);
-
-//         /* Wait for BLE transmit to complete */
-//         k_sem_take(&ble_done_sem, K_FOREVER);
-
-//         printk("[MAIN] BLE transmit complete, preparing to enter System ON sleep\n");
-
-//         /* Suspend unnecessary peripherals and threads */
-//         prepare_for_sleep();
-
-//         /* Set RTC alarm to wake up after desired duration */
-//         rtc2_set_alarm(50000); // 50 seconds
-//         printk("[MAIN] RTC alarm set for 50 seconds\n");
-
-//         /* Enter System ON sleep */
-//         enter_system_on_sleep();
-
-//         /* Upon waking up, resume operations */
-//         printk("[MAIN] Woke up from sleep, resuming operations\n");
-//         resume_after_wakeup();
-//     }
-// }

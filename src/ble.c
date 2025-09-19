@@ -13,7 +13,7 @@
 uint16_t patient_id;
 /* Backing storage for ACK characteristic */
 uint8_t ack_value[10];  
-static struct bt_gatt_attr *ack_attr_ref;
+static struct bt_gatt_attr *ack_char_attr = NULL;
 
 /* Read callback */
 static ssize_t read_ack(struct bt_conn *conn,
@@ -113,12 +113,6 @@ static struct bt_uuid_128 accel_char_uuid = BT_UUID_INIT_128(
     0x98, 0x65, 0x12, 0xa1, 0xd8, 0x03, 0xb3, 0x93,
     0x42, 0xf1, 0x61, 0x43, 0x96, 0x21, 0xf5, 0x0a);
 
-
-/* -------- Custom Service UUID -------- */
-static struct bt_uuid_128 input_service_uuid =
-    BT_UUID_INIT_128(0xf0, 0xde, 0xbc, 0x9a, 0x78, 0x56, 0x34, 0x12,
-                     0x34, 0x12, 0x78, 0x56, 0x34, 0x12, 0x56, 0x12);
-
 /* -------- ACK Characteristic UUID -------- */
 static struct bt_uuid_128 ack_char_uuid =
     BT_UUID_INIT_128(0xf1, 0xde, 0xbc, 0x9a, 0x78, 0x56, 0x34, 0x12,
@@ -197,6 +191,26 @@ static void ack_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 BT_GATT_SERVICE_DEFINE(vitals_svc,
     BT_GATT_PRIMARY_SERVICE(&vitals_service_uuid),
 
+    /* ACK Characteristic */
+    BT_GATT_CHARACTERISTIC(&ack_char_uuid.uuid,
+                           BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE | BT_GATT_CHRC_NOTIFY,
+                           BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
+                           read_ack, write_ack, &ack_value),
+    BT_GATT_CCC(ack_ccc_cfg_changed,
+                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+
+    /* Patient ID Characteristic */
+    BT_GATT_CHARACTERISTIC(&patient_id_char_uuid.uuid,
+                           BT_GATT_CHRC_WRITE,
+                           BT_GATT_PERM_WRITE,
+                           NULL, write_patient_id, NULL),
+
+    /* Timestamp Characteristic */
+    BT_GATT_CHARACTERISTIC(&timestamp_char_uuid.uuid,
+                           BT_GATT_CHRC_WRITE,
+                           BT_GATT_PERM_WRITE,
+                           NULL, write_timestamp, NULL),
+
     /* PPG Characteristic */
     BT_GATT_CHARACTERISTIC(&ppg_char_uuid.uuid,
                            BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
@@ -223,39 +237,35 @@ BT_GATT_SERVICE_DEFINE(vitals_svc,
 );
 
 
-BT_GATT_SERVICE_DEFINE(input_svc,
-    BT_GATT_PRIMARY_SERVICE(&input_service_uuid),
-
-    /* ACK Characteristic */
-    BT_GATT_CHARACTERISTIC(&ack_char_uuid.uuid,
-                           BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE | BT_GATT_CHRC_NOTIFY,
-                           BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
-                           read_ack, write_ack, &ack_value),
-    BT_GATT_CCC(ack_ccc_cfg_changed,
-                BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
-
-    /* Patient ID Characteristic */
-    BT_GATT_CHARACTERISTIC(&patient_id_char_uuid.uuid,
-                           BT_GATT_CHRC_WRITE,
-                           BT_GATT_PERM_WRITE,
-                           NULL, write_patient_id, NULL),
-
-    /* Timestamp Characteristic */
-    BT_GATT_CHARACTERISTIC(&timestamp_char_uuid.uuid,
-                           BT_GATT_CHRC_WRITE,
-                           BT_GATT_PERM_WRITE,
-                           NULL, write_timestamp, NULL)
-);
-
-
-
-/* Assign characteristic pointers */
+/* Assign characteristic pointers dynamically */
 static void assign_attr_pointers(void)
 {
-    ppg_char_attr   = &vitals_svc.attrs[2];
-    accel_char_attr = &vitals_svc.attrs[5]; 
-    temp_char_attr  = &vitals_svc.attrs[8];
+    for (int i = 0; i < vitals_svc.attr_count; i++) {
+        const struct bt_uuid *uuid = vitals_svc.attrs[i].uuid;
+
+        if (!uuid) {
+            continue;
+        }
+
+        if (bt_uuid_cmp(uuid, &ack_char_uuid.uuid) == 0) {
+            ack_char_attr = &vitals_svc.attrs[i];
+        }
+        else if (bt_uuid_cmp(uuid, &ppg_char_uuid.uuid) == 0) {
+            ppg_char_attr = &vitals_svc.attrs[i];
+        }
+        else if (bt_uuid_cmp(uuid, &accel_char_uuid.uuid) == 0) {
+            accel_char_attr = &vitals_svc.attrs[i];
+        }
+        else if (bt_uuid_cmp(uuid, &temp_char_uuid.uuid) == 0) {
+            temp_char_attr = &vitals_svc.attrs[i];
+        }
+    }
+
+    /* Debug prints so you can verify */
+    printk("assign_attr_pointers: ACK=%p, PPG=%p, ACCEL=%p, TEMP=%p\n",
+           ack_char_attr, ppg_char_attr, accel_char_attr, temp_char_attr);
 }
+
 
 /* ---------- BLE Helpers ---------- */
 void print_ble_address(void)
@@ -354,9 +364,11 @@ void send_ack_to_mobile(const char *ack_msg)
     strncpy(ack_value, ack_msg, sizeof(ack_value) - 1);
     ack_value[sizeof(ack_value) - 1] = '\0';
 
-    // Send notification only if ACK notify is enabled and connection exists
-    if (ack_notify_enabled && current_conn) {
-        bt_gatt_notify(current_conn, &input_svc.attrs[1], ack_value, strlen(ack_value));
+    if (ack_notify_enabled && current_conn && ack_char_attr) {
+        bt_gatt_notify(current_conn, ack_char_attr,
+                       ack_value, strlen(ack_value));
         printk("ACK sent to mobile: %s\n", ack_value);
+    } else {
+        printk("ACK notify not enabled or no connection.\n");
     }
 }

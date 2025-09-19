@@ -3,11 +3,9 @@
 #include <zephyr/drivers/gpio.h>
 #include <hal/nrf_power.h>
 
-
 #define GPIO_PIN 16
 #define CHARGING_GPIO_PIN 7
 #define CHARGING_GPIO_FLAGS (GPIO_INPUT | GPIO_INT_EDGE_RISING)
-#define GPIO0_NODE DT_NODELABEL(gpio0)
 extern const struct device *gpio0_dev;
 
 void gpio_high(void);
